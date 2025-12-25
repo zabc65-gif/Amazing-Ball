@@ -1,0 +1,355 @@
+#include "Menu.hpp"
+#include <cmath>
+
+Menu::Menu()
+    : state(MenuState::MAIN_MENU),
+      selectedOption(0),
+      numOptions(4),
+      startNewGame(false),
+      continueGame(false),
+      quit(false),
+      titlePulse(0.0f),
+      titlePulseSpeed(0.05f) {}
+
+Menu::~Menu() {}
+
+void Menu::handleInput(SDL_Event& event) {
+    if (event.type == SDL_KEYDOWN) {
+        if (state == MenuState::MAIN_MENU) {
+            switch (event.key.keysym.sym) {
+                case SDLK_UP:
+                    selectedOption--;
+                    if (selectedOption < 0) {
+                        selectedOption = numOptions - 1;
+                    }
+                    break;
+
+                case SDLK_DOWN:
+                    selectedOption++;
+                    if (selectedOption >= numOptions) {
+                        selectedOption = 0;
+                    }
+                    break;
+
+                case SDLK_RETURN:
+                case SDLK_SPACE:
+                    switch (selectedOption) {
+                        case 0: // Jouer
+                            startNewGame = true;
+                            state = MenuState::PLAYING;
+                            break;
+                        case 1: // Continuer
+                            continueGame = true;
+                            state = MenuState::PLAYING;
+                            break;
+                        case 2: // Crédits
+                            state = MenuState::CREDITS_SCREEN;
+                            break;
+                        case 3: // Quitter
+                            quit = true;
+                            break;
+                    }
+                    break;
+
+                case SDLK_ESCAPE:
+                    // Ne rien faire sur le menu principal
+                    break;
+            }
+        } else if (state == MenuState::CREDITS_SCREEN) {
+            // Retour au menu avec n'importe quelle touche
+            if (event.key.keysym.sym == SDLK_ESCAPE ||
+                event.key.keysym.sym == SDLK_RETURN ||
+                event.key.keysym.sym == SDLK_SPACE) {
+                state = MenuState::MAIN_MENU;
+            }
+        }
+    }
+}
+
+void Menu::update() {
+    // Animation du titre
+    titlePulse += titlePulseSpeed;
+    if (titlePulse > 2 * M_PI) {
+        titlePulse -= 2 * M_PI;
+    }
+}
+
+void Menu::drawFilledRect(SDL_Renderer* renderer, int x, int y, int w, int h) {
+    SDL_Rect rect = {x, y, w, h};
+    SDL_RenderFillRect(renderer, &rect);
+}
+
+void Menu::drawBorder(SDL_Renderer* renderer, int x, int y, int w, int h) {
+    SDL_Rect rect = {x, y, w, h};
+    SDL_RenderDrawRect(renderer, &rect);
+}
+
+void Menu::drawText(SDL_Renderer* renderer, const std::string& text, int x, int y,
+                    int size, bool selected) {
+    // Fonction simple pour dessiner du texte pixel art
+    // Chaque caractère fait 8x8 pixels de base, multiplié par size
+
+    int charWidth = 8 * size;
+    int charHeight = 8 * size;
+    int spacing = 2 * size;
+
+    int currentX = x;
+    int textWidth = 0;
+
+    // Calculer la largeur totale du texte
+    for (size_t i = 0; i < text.length(); i++) {
+        textWidth += charWidth + spacing;
+    }
+
+    for (char c : text) {
+        // Dessiner un rectangle pour chaque caractère (style rétro simplifié)
+        if (c != ' ') {
+            // Couleur du texte
+            if (selected) {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            } else {
+                SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+            }
+
+            // Dessiner des rectangles pour former des lettres simplifiées
+            // Version très simplifiée - juste des blocs pour chaque lettre
+            int pixelSize = size;
+
+            // Dessiner une forme de base pour chaque lettre
+            for (int py = 0; py < 7; py++) {
+                for (int px = 0; px < 5; px++) {
+                    bool drawPixel = false;
+
+                    // Patterns simplifiés pour quelques lettres communes
+                    switch (c) {
+                        case 'A': case 'a':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py > 0 && py < 7 && (px == 0 || px == 4)) ||
+                                       (py == 3 && px > 0 && px < 4);
+                            break;
+                        case 'B': case 'b':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 3 && px < 4) ||
+                                       (py == 6 && px < 4) ||
+                                       (px == 4 && (py == 1 || py == 2 || py == 4 || py == 5));
+                            break;
+                        case 'C': case 'c':
+                            drawPixel = (py == 0 && px > 0) ||
+                                       (py == 6 && px > 0) ||
+                                       (px == 0 && py > 0 && py < 6);
+                            break;
+                        case 'D': case 'd':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 6 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 6);
+                            break;
+                        case 'E': case 'e':
+                            drawPixel = (px == 0) ||
+                                       (py == 0) ||
+                                       (py == 3 && px < 4) ||
+                                       (py == 6);
+                            break;
+                        case 'I': case 'i':
+                            drawPixel = (px == 2) ||
+                                       (py == 0) ||
+                                       (py == 6);
+                            break;
+                        case 'J': case 'j':
+                            drawPixel = (py == 0) ||
+                                       (px == 3 && py < 6) ||
+                                       (py == 6 && px < 4) ||
+                                       (px == 0 && py == 5);
+                            break;
+                        case 'L': case 'l':
+                            drawPixel = (px == 0) ||
+                                       (py == 6);
+                            break;
+                        case 'N': case 'n':
+                            drawPixel = (px == 0) ||
+                                       (px == 4) ||
+                                       (py == px && px < 5);
+                            break;
+                        case 'O': case 'o':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       ((px == 0 || px == 4) && py > 0 && py < 6);
+                            break;
+                        case 'R': case 'r':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 3 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 3) ||
+                                       (py - 3 == px && px > 0);
+                            break;
+                        case 'S': case 's':
+                            drawPixel = (py == 0 && px > 0) ||
+                                       (px == 0 && py > 0 && py < 3) ||
+                                       (py == 3 && px > 0 && px < 4) ||
+                                       (px == 4 && py > 3 && py < 6) ||
+                                       (py == 6 && px < 4);
+                            break;
+                        case 'T': case 't':
+                            drawPixel = (py == 0) ||
+                                       (px == 2);
+                            break;
+                        case 'U': case 'u':
+                            drawPixel = ((px == 0 || px == 4) && py < 6) ||
+                                       (py == 6 && px > 0 && px < 4);
+                            break;
+                        case 'F': case 'f':
+                            drawPixel = (px == 0) ||
+                                       (py == 0) ||
+                                       (py == 3 && px < 3);
+                            break;
+                        case 'G': case 'g':
+                            drawPixel = (py == 0 && px > 0) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       (px == 0 && py > 0 && py < 6) ||
+                                       (py == 3 && px > 2) ||
+                                       (px == 4 && py > 3 && py < 6);
+                            break;
+                        case 'H': case 'h':
+                            drawPixel = (px == 0 || px == 4) ||
+                                       (py == 3);
+                            break;
+                        case 'K': case 'k':
+                            drawPixel = (px == 0) ||
+                                       (py == px && px > 1 && py < 4) ||
+                                       (py + px == 6 && px > 1);
+                            break;
+                        case 'M': case 'm':
+                            drawPixel = (px == 0 || px == 4) ||
+                                       (py == 1 && (px == 1 || px == 3)) ||
+                                       (py == 2 && px == 2);
+                            break;
+                        case 'P': case 'p':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 3 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 3);
+                            break;
+                        case 'Q': case 'q':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       ((px == 0 || px == 4) && py > 0 && py < 6) ||
+                                       (py == 5 && px == 3) ||
+                                       (py == 6 && px == 4);
+                            break;
+                        case 'V': case 'v':
+                            drawPixel = (px == 0 && py < 5) ||
+                                       (px == 4 && py < 5) ||
+                                       (px == 1 && py == 5) ||
+                                       (px == 3 && py == 5) ||
+                                       (px == 2 && py == 6);
+                            break;
+                        case 'W': case 'w':
+                            drawPixel = (px == 0 || px == 4) ||
+                                       (py == 5 && (px == 1 || px == 3)) ||
+                                       (py == 6 && px == 2);
+                            break;
+                        case 'X': case 'x':
+                            drawPixel = (py == px) ||
+                                       (py + px == 6);
+                            break;
+                        case 'Y': case 'y':
+                            drawPixel = (py == px && py < 3) ||
+                                       (py + px == 6 && py < 3) ||
+                                       (px == 2 && py > 2);
+                            break;
+                        case 'Z': case 'z':
+                            drawPixel = (py == 0) ||
+                                       (py == 6) ||
+                                       (py + px == 6);
+                            break;
+                        default:
+                            // Pour les caractères non définis, dessiner un bloc simple
+                            drawPixel = (px == 2 && py > 1 && py < 5);
+                            break;
+                    }
+
+                    if (drawPixel) {
+                        drawFilledRect(renderer,
+                                     currentX + px * pixelSize,
+                                     y + py * pixelSize,
+                                     pixelSize, pixelSize);
+                    }
+                }
+            }
+        }
+
+        currentX += charWidth + spacing;
+    }
+
+    // Dessiner le soulignement blanc si l'option est sélectionnée
+    if (selected) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        int underlineY = y + charHeight + 4 * size;
+        int underlineHeight = 2 * size;
+        drawFilledRect(renderer, x, underlineY, textWidth - spacing, underlineHeight);
+    }
+}
+
+void Menu::render(SDL_Renderer* renderer) {
+    // Fond noir
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    if (state == MenuState::MAIN_MENU) {
+        // Titre du jeu avec effet de pulsation
+        float pulse = 1.0f + 0.1f * std::sin(titlePulse);
+        int titleSize = static_cast<int>(4 * pulse);
+
+        // Effet de halo autour du titre
+        for (int i = 0; i < 3; i++) {
+            int alpha = 50 - i * 15;
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
+            int offset = (3 - i) * 3;
+            // Simuler un halo avec des rectangles
+            SDL_Rect haloRect = {150 - offset, 80 - offset, 500 + offset * 2, 80 + offset * 2};
+            SDL_RenderDrawRect(renderer, &haloRect);
+        }
+
+        drawText(renderer, "AMAZING BALL", 180, 80, titleSize, false);
+
+        // Options du menu
+        int menuY = 250;
+        int menuSpacing = 70;
+
+        drawText(renderer, "JOUER", 340, menuY, 2, selectedOption == 0);
+        drawText(renderer, "CONTINUER", 290, menuY + menuSpacing, 2, selectedOption == 1);
+        drawText(renderer, "CREDITS", 310, menuY + menuSpacing * 2, 2, selectedOption == 2);
+        drawText(renderer, "QUITTER", 310, menuY + menuSpacing * 3, 2, selectedOption == 3);
+
+        // Instructions en bas
+        SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
+        drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 100, 550, 1, false);
+
+    } else if (state == MenuState::CREDITS_SCREEN) {
+        // Écran des crédits
+        drawText(renderer, "CREDITS", 320, 100, 3, false);
+
+        int y = 220;
+        int spacing = 50;
+
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        drawText(renderer, "DEVELOPPEMENT", 250, y, 2, false);
+        y += spacing;
+        drawText(renderer, "VOTRE NOM", 300, y, 1, false);
+        y += spacing * 2;
+
+        drawText(renderer, "GRAPHISMES", 280, y, 2, false);
+        y += spacing;
+        drawText(renderer, "CUSTOM PIXEL ART", 230, y, 1, false);
+        y += spacing * 2;
+
+        drawText(renderer, "MOTEUR", 330, y, 2, false);
+        y += spacing;
+        drawText(renderer, "SDL2", 350, y, 1, false);
+
+        // Instruction de retour
+        SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
+        drawText(renderer, "APPUYEZ SUR ECHAP POUR REVENIR", 150, 550, 1, false);
+    }
+}

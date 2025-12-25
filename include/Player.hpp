@@ -18,11 +18,15 @@ public:
     ~Player();
 
     void handleInput();
+    void handleEvent(SDL_Event& event);
     void update();
     void render(SDL_Renderer* renderer);
 
     Vector2D getPosition() const { return position; }
     bool isAttacking() const { return attacking; }
+    Direction getDirection() const { return direction; }
+    int getAttackRange() const { return 30; }
+    int getRadius() const { return radius; }
 
 private:
     void drawCircle(SDL_Renderer* renderer, int centerX, int centerY, int radius);
@@ -35,6 +39,14 @@ private:
 
     float speed;
     int radius;
+
+    // Système de saut
+    bool isJumping;
+    bool isGrounded;
+    float jumpVelocity;
+    float gravity;
+    float verticalVelocity;
+    float groundLevel;
 
     // Animation de pulsation du halo
     float haloPhase;

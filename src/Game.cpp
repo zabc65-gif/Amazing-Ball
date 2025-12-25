@@ -1,9 +1,11 @@
 #include "Game.hpp"
 #include "Player.hpp"
 #include "Map.hpp"
+#include "Enemy.hpp"
+#include "Menu.hpp"
 #include <iostream>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150) {}
+Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false) {}
 
 Game::~Game() {
     clean();
@@ -35,6 +37,9 @@ bool Game::init(const char* title, int width, int height) {
 
     isRunning = true;
 
+    // Créer le menu
+    menu = std::make_unique<Menu>();
+
     // Initialiser le joueur au centre de l'écran
     player = std::make_unique<Player>(width / 2, height / 2);
 
@@ -62,6 +67,12 @@ bool Game::init(const char* title, int width, int height) {
 
     map->loadMap(level1, 20, 15);
 
+    // Créer quelques ennemis
+    enemies.push_back(std::make_unique<Enemy>(200, 150));
+    enemies.push_back(std::make_unique<Enemy>(600, 200));
+    enemies.push_back(std::make_unique<Enemy>(400, 400));
+    enemies.push_back(std::make_unique<Enemy>(150, 450));
+
     // Créer la texture de lumière
     createLightTexture();
 
@@ -74,17 +85,101 @@ void Game::handleEvents() {
         if (event.type == SDL_QUIT) {
             isRunning = false;
         }
-        if (event.type == SDL_KEYDOWN) {
-            if (event.key.keysym.sym == SDLK_ESCAPE) {
+
+        if (!gameStarted) {
+            // Gérer les entrées du menu
+            menu->handleInput(event);
+
+            // Vérifier si le jeu doit démarrer
+            if (menu->shouldStartNewGame()) {
+                gameStarted = true;
+                menu->resetFlags();
+
+                // Réinitialiser le jeu pour une nouvelle partie
+                player = std::make_unique<Player>(400, 300);
+                enemies.clear();
+                enemies.push_back(std::make_unique<Enemy>(200, 150));
+                enemies.push_back(std::make_unique<Enemy>(600, 200));
+                enemies.push_back(std::make_unique<Enemy>(400, 400));
+                enemies.push_back(std::make_unique<Enemy>(150, 450));
+            } else if (menu->shouldContinueGame()) {
+                gameStarted = true;
+                menu->resetFlags();
+                // Continuer avec l'état actuel du jeu
+            } else if (menu->shouldQuit()) {
                 isRunning = false;
+            }
+        } else {
+            // Gérer les entrées du jeu
+            player->handleEvent(event);
+
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                    // Retour au menu
+                    gameStarted = false;
+                    menu->setState(MenuState::MAIN_MENU);
+                }
             }
         }
     }
 }
 
 void Game::update() {
+    if (!gameStarted) {
+        // Mettre à jour le menu
+        menu->update();
+        return;
+    }
+
     player->handleInput();
     player->update();
+
+    // Mettre à jour les ennemis
+    Vector2D playerPos = player->getPosition();
+    for (auto& enemy : enemies) {
+        enemy->update(playerPos);
+    }
+
+    // Détection de collision entre l'attaque du joueur et les ennemis
+    if (player->isAttacking()) {
+        Direction playerDir = player->getDirection();
+        int attackRange = player->getAttackRange();
+
+        for (auto& enemy : enemies) {
+            Vector2D enemyPos = enemy->getPosition();
+            float dx = enemyPos.x - playerPos.x;
+            float dy = enemyPos.y - playerPos.y;
+
+            // Vérifier si l'ennemi est dans la direction de l'attaque
+            bool inAttackZone = false;
+
+            switch (playerDir) {
+                case Direction::UP:
+                    inAttackZone = (dy < 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                    break;
+                case Direction::DOWN:
+                    inAttackZone = (dy > 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                    break;
+                case Direction::LEFT:
+                    inAttackZone = (dx < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                    break;
+                case Direction::RIGHT:
+                    inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                    break;
+            }
+
+            if (inAttackZone) {
+                enemy->takeDamage(1);
+            }
+        }
+    }
+
+    // Supprimer les ennemis morts
+    enemies.erase(
+        std::remove_if(enemies.begin(), enemies.end(),
+            [](const std::unique_ptr<Enemy>& e) { return e->isDead(); }),
+        enemies.end()
+    );
 }
 
 void Game::createLightTexture() {
@@ -146,16 +241,26 @@ void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    // Rendre la carte
-    map->render(renderer);
+    if (!gameStarted) {
+        // Afficher le menu
+        menu->render(renderer);
+    } else {
+        // Rendre la carte
+        map->render(renderer);
 
-    // Appliquer le masque de lumière avec SDL_BLENDMODE_MOD
-    // Cela multiplie les couleurs : noir (0,0,0) cache tout, blanc (255,255,255) révèle
-    Vector2D playerPos = player->getPosition();
-    drawPlayerLight(static_cast<int>(playerPos.x), static_cast<int>(playerPos.y));
+        // Rendre les ennemis
+        for (auto& enemy : enemies) {
+            enemy->render(renderer);
+        }
 
-    // Rendre le joueur APRÈS pour qu'il soit visible
-    player->render(renderer);
+        // Appliquer le masque de lumière avec SDL_BLENDMODE_MOD
+        // Cela multiplie les couleurs : noir (0,0,0) cache tout, blanc (255,255,255) révèle
+        Vector2D playerPos = player->getPosition();
+        drawPlayerLight(static_cast<int>(playerPos.x), static_cast<int>(playerPos.y));
+
+        // Rendre le joueur APRÈS pour qu'il soit visible
+        player->render(renderer);
+    }
 
     SDL_RenderPresent(renderer);
 

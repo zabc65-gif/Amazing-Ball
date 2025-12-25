@@ -7,6 +7,12 @@ Player::Player(float x, float y)
       direction(Direction::DOWN),
       speed(3.5f),
       radius(8),  // Réduit de 30% supplémentaires (12 -> 8.4, arrondi à 8)
+      isJumping(false),
+      isGrounded(true),
+      jumpVelocity(-7.5f),   // Vitesse initiale du saut (ajustée)
+      gravity(0.6f),          // Force de gravité
+      verticalVelocity(0.0f),
+      groundLevel(y),
       haloPhase(0.0f),
       haloSpeed(0.08f),
       satelliteOffsetX(25.0f),  // À droite du joueur
@@ -51,23 +57,53 @@ void Player::handleInput() {
         velocity.x = speed;
         direction = Direction::RIGHT;
     }
+}
 
-    // Attaque avec Espace
-    if (keyState[SDL_SCANCODE_SPACE] && !attacking) {
-        attacking = true;
-        attackTimer = attackDuration;
+void Player::handleEvent(SDL_Event& event) {
+    if (event.type == SDL_KEYDOWN) {
+        // Saut avec W ou Espace
+        if ((event.key.keysym.sym == SDLK_w || event.key.keysym.sym == SDLK_SPACE) && isGrounded && !attacking) {
+            isJumping = true;
+            isGrounded = false;
+            verticalVelocity = jumpVelocity;
+        }
+
+        // Attaque avec Shift
+        if (event.key.keysym.sym == SDLK_LSHIFT && !attacking) {
+            attacking = true;
+            attackTimer = attackDuration;
+        }
     }
 }
 
 void Player::update() {
-    // Mise à jour de la position
+    // Mise à jour de la position horizontale
     position += velocity;
+
+    // Physique du saut
+    if (!isGrounded) {
+        // Appliquer la gravité
+        verticalVelocity += gravity;
+        position.y += verticalVelocity;
+
+        // Vérifier si on touche le sol
+        if (position.y >= groundLevel) {
+            position.y = groundLevel;
+            verticalVelocity = 0.0f;
+            isGrounded = true;
+            isJumping = false;
+        }
+    }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
     if (position.x < 40 + radius) position.x = 40 + radius;
     if (position.x > 800 - 40 - radius) position.x = 800 - 40 - radius;
-    if (position.y < 40 + radius) position.y = 40 + radius;
-    if (position.y > 600 - 40 - radius) position.y = 600 - 40 - radius;
+
+    // Limites verticales uniquement pour empêcher de sortir par le haut
+    if (position.y < 40 + radius) {
+        position.y = 40 + radius;
+        verticalVelocity = 0.0f;
+    }
 
     // Mettre à jour l'historique des positions
     positionHistory.push_back(position);
@@ -75,8 +111,9 @@ void Player::update() {
         positionHistory.pop_front();
     }
 
-    // Utiliser la position d'il y a 30 frames pour le satellite
-    Vector2D delayedPosition = positionHistory.front();
+    // Utiliser la position d'il y a 15 frames pour le satellite
+    // Sécurité: utiliser la position actuelle si l'historique n'est pas encore complet
+    Vector2D delayedPosition = positionHistory.empty() ? position : positionHistory.front();
 
     // Calculer le déplacement basé sur la position retardée
     Vector2D movement = delayedPosition - previousPosition;
@@ -198,7 +235,8 @@ void Player::render(SDL_Renderer* renderer) {
 
     // ===== SATELLITE =====
     // Utiliser la position retardée pour le satellite
-    Vector2D delayedPosition = positionHistory.front();
+    // Sécurité: utiliser la position actuelle si l'historique n'est pas encore complet
+    Vector2D delayedPosition = positionHistory.empty() ? position : positionHistory.front();
 
     // Calculer la position du satellite avec effet de flottement et inertie
     float floatOffset = 4.0f * std::sin(satelliteFloatPhase);

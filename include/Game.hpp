@@ -3,9 +3,12 @@
 
 #include <SDL2/SDL.h>
 #include <memory>
+#include <vector>
 
 class Player;
 class Map;
+class Enemy;
+class Menu;
 
 class Game {
 public:
@@ -32,9 +35,13 @@ private:
 
     std::unique_ptr<Player> player;
     std::unique_ptr<Map> map;
+    std::vector<std::unique_ptr<Enemy>> enemies;
+    std::unique_ptr<Menu> menu;
 
     SDL_Texture* lightTexture;
     int lightRadius;
+
+    bool gameStarted;
 
     const int FPS = 60;
     const int frameDelay = 1000 / FPS;
