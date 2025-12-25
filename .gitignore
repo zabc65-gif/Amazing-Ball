@@ -1,0 +1,19 @@
+# Fichiers compilés
+build/
+*.o
+amazing_ball
+
+# Fichiers système macOS
+.DS_Store
+
+# Fichiers IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers de compilation
+*.a
+*.so
+*.dylib
