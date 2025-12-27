@@ -387,28 +387,38 @@ void Menu::render(SDL_Renderer* renderer) {
 
     } else if (state == MenuState::CREDITS_SCREEN) {
         // Écran des crédits
-        drawText(renderer, "CREDITS", 310, 50, 3, false);
+        // Calculer les positions centrées (écran 800px de large)
+        // Format: (charWidth + spacing) * nb_chars = (8*size + 2*size) * nb_chars = 10*size * nb_chars
+
+        // "CREDITS" = 7 chars, size 3 -> largeur = 10*3*7 = 210px -> x_centre = (800-210)/2 = 295
+        drawText(renderer, "CREDITS", 295, 50, 3, false);
 
         int y = 150;
         int spacing = 50;
 
         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
-        drawText(renderer, "DEVELOPPEMENT", 240, y, 2, false);
+        // "DEVELOPPEMENT" = 13 chars, size 2 -> largeur = 10*2*13 = 260px -> x_centre = (800-260)/2 = 270
+        drawText(renderer, "DEVELOPPEMENT", 270, y, 2, false);
         y += spacing;
-        drawText(renderer, "BRUNO BOIRIE", 260, y, 1, false);
+        // "BRUNO BOIRIE" = 12 chars, size 1 -> largeur = 10*1*12 = 120px -> x_centre = (800-120)/2 = 340
+        drawText(renderer, "BRUNO BOIRIE", 340, y, 1, false);
         y += spacing * 2;
 
-        drawText(renderer, "GRAPHISMES", 270, y, 2, false);
+        // "GRAPHISMES" = 10 chars, size 2 -> largeur = 10*2*10 = 200px -> x_centre = (800-200)/2 = 300
+        drawText(renderer, "GRAPHISMES", 300, y, 2, false);
         y += spacing;
-        drawText(renderer, "BRUNO BOIRIE", 260, y, 1, false);
+        drawText(renderer, "BRUNO BOIRIE", 340, y, 1, false);
         y += spacing * 2;
 
-        drawText(renderer, "MOTEUR", 330, y, 2, false);
+        // "MOTEUR" = 6 chars, size 2 -> largeur = 10*2*6 = 120px -> x_centre = (800-120)/2 = 340
+        drawText(renderer, "MOTEUR", 340, y, 2, false);
         y += spacing;
-        drawText(renderer, "SDL2", 360, y, 1, false);
+        // "SDL2" = 4 chars, size 1 -> largeur = 10*1*4 = 40px -> x_centre = (800-40)/2 = 380
+        drawText(renderer, "SDL2", 380, y, 1, false);
 
         // Instruction de retour
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
-        drawText(renderer, "APPUYER SUR ECHAP POUR REVENIR", 155, 550, 1, false);
+        // "APPUYER SUR ECHAP POUR REVENIR" = 30 chars, size 1 -> largeur = 10*1*30 = 300px -> x_centre = (800-300)/2 = 250
+        drawText(renderer, "APPUYER SUR ECHAP POUR REVENIR", 250, 550, 1, false);
     }
 }
