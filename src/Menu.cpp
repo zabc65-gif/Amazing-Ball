@@ -308,6 +308,57 @@ void Menu::drawText(SDL_Renderer* renderer, const std::string& text, int x, int 
                                        (py == 6) ||
                                        (py + px == 6);
                             break;
+                        case '0':
+                            drawPixel = ((py == 0 || py == 6) && px > 0 && px < 4) ||
+                                       ((px == 0 || px == 4) && py > 0 && py < 6);
+                            break;
+                        case '1':
+                            drawPixel = (px == 2) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       (py == 1 && px == 1);
+                            break;
+                        case '2':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py == 3 && px > 0 && px < 4) ||
+                                       (py == 6 && px >= 0 && px < 5) ||
+                                       (px == 4 && py > 0 && py < 3) ||
+                                       (px == 0 && py > 3 && py < 6);
+                            break;
+                        case '3':
+                            drawPixel = ((py == 0 || py == 3 || py == 6) && px > 0 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 6 && py != 3);
+                            break;
+                        case '4':
+                            drawPixel = (px == 0 && py < 4) ||
+                                       (py == 3 && px < 5) ||
+                                       (px == 4);
+                            break;
+                        case '5':
+                            drawPixel = (py == 0 && px >= 0 && px < 5) ||
+                                       (py == 3 && px > 0 && px < 4) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       (px == 0 && py > 0 && py < 3) ||
+                                       (px == 4 && py > 3 && py < 6);
+                            break;
+                        case '6':
+                            drawPixel = ((py == 0 || py == 3 || py == 6) && px > 0 && px < 4) ||
+                                       (px == 0 && py > 0 && py < 6) ||
+                                       (px == 4 && py > 3 && py < 6);
+                            break;
+                        case '7':
+                            drawPixel = (py == 0) ||
+                                       (px == 4 && py > 0 && py < 4) ||
+                                       (px == 3 && py > 3);
+                            break;
+                        case '8':
+                            drawPixel = ((py == 0 || py == 3 || py == 6) && px > 0 && px < 4) ||
+                                       ((px == 0 || px == 4) && py > 0 && py < 6 && py != 3);
+                            break;
+                        case '9':
+                            drawPixel = ((py == 0 || py == 3 || py == 6) && px > 0 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 6) ||
+                                       (px == 0 && py > 0 && py < 3);
+                            break;
                         default:
                             // Pour les caractères non définis, dessiner un bloc simple
                             drawPixel = (px == 2 && py > 1 && py < 5);
