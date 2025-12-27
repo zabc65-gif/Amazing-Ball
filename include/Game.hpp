@@ -52,6 +52,8 @@ private:
     int windowHeight;
     int totalScore;
     float totalTime;
+    int playerLives;
+    bool gameOver;
 
     const int FPS = 60;
     const int frameDelay = 1000 / FPS;

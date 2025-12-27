@@ -16,8 +16,6 @@ Room::Room(int screenWidth, int screenHeight, int level, Difficulty difficulty)
       timerRunning(false),
       celebrating(false),
       celebrationTime(0.0f),
-      lives(3),
-      gameOver(false),
       arrowAnimPhase(0.0f) {
 
     // Le rayon d'un trou est le double de la taille du joueur (rayon du joueur = 8)
@@ -106,16 +104,6 @@ int Room::getScore() const {
     int score = 1000 - static_cast<int>(elapsedTime * 10);
     if (score < 0) score = 0;
     return score;
-}
-
-void Room::loseLife() {
-    if (lives > 0) {
-        lives--;
-        if (lives <= 0) {
-            gameOver = true;
-            stopTimer();
-        }
-    }
 }
 
 void Room::update(float deltaTime) {
@@ -431,7 +419,7 @@ void Room::render(SDL_Renderer* renderer) {
     }
 }
 
-void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime) {
+void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int lives, bool gameOver) {
     // Afficher les cœurs en haut à gauche
     int heartSize = 2;
     int heartSpacing = heartSize * 10;

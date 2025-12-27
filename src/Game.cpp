@@ -6,7 +6,7 @@
 #include "Room.hpp"
 #include <iostream>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f) {}
+Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), gameOver(false) {}
 
 Game::~Game() {
     clean();
@@ -101,6 +101,8 @@ void Game::handleEvents() {
                 currentLevel = 1;
                 totalScore = 0; // Réinitialiser le score total
                 totalTime = 0.0f; // Réinitialiser le temps total
+                playerLives = 3; // Réinitialiser les vies
+                gameOver = false; // Réinitialiser le game over
                 menu->resetFlags();
 
                 // Réinitialiser le jeu pour une nouvelle partie
@@ -158,23 +160,27 @@ void Game::update() {
         }
 
         // Vérifier si le joueur est tombé dans un trou
-        if (currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !currentRoom->isGameOver()) {
+        if (currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !gameOver) {
             // Perdre une vie
-            currentRoom->loseLife();
+            playerLives--;
+            if (playerLives <= 0) {
+                gameOver = true;
+                currentRoom->stopTimer();
+            }
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
             // Ne PAS réinitialiser hasStarted - le timer continue
         }
 
         // Vérifier si le joueur a atteint la fin de la salle
-        if (currentRoom->hasReachedEnd(playerPos) && !currentRoom->isCelebrating() && !currentRoom->isGameOver()) {
+        if (currentRoom->hasReachedEnd(playerPos) && !currentRoom->isCelebrating() && !gameOver) {
             // Arrêter le timer et créer l'explosion de fête
             currentRoom->stopTimer();
             currentRoom->createCelebrationParticles(playerPos);
         }
 
         // Si la célébration est terminée, passer au niveau suivant
-        if (currentRoom->isCelebrating() && currentRoom->getScore() >= 0 && !currentRoom->isGameOver()) {
+        if (currentRoom->isCelebrating() && currentRoom->getScore() >= 0 && !gameOver) {
             static float celebrationTimer = 0.0f;
             celebrationTimer += 1.0f / 60.0f;
 
@@ -321,7 +327,7 @@ void Game::render() {
         player->render(renderer);
 
         // Afficher le HUD (score et temps) en premier plan, après l'effet de lumière
-        currentRoom->renderHUD(renderer, totalScore, totalTime);
+        currentRoom->renderHUD(renderer, totalScore, totalTime, playerLives, gameOver);
     } else {
         // Mode exploration (ancien mode)
         // Rendre la carte
