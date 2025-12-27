@@ -1,4 +1,5 @@
 #include "Enemy.hpp"
+#include "Room.hpp"
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
@@ -10,14 +11,18 @@ Enemy::Enemy(float x, float y)
       state(EnemyState::PATROL),
       speed(1.5f),
       radius(12),
-      health(3),
-      maxHealth(3),
+      health(2),
+      maxHealth(2),
+      lightRadius(80),
       detectionRadius(200.0f),
       attackRadius(30.0f),
       attackCooldown(0),
       attackCooldownMax(60),
       animationPhase(0.0f),
-      animationSpeed(0.1f) {
+      animationSpeed(0.1f),
+      knockbackVelocity(0, 0),
+      knockbackFrames(0),
+      knockbackDuration(15) {
 
     // Initialiser le générateur aléatoire
     static bool seeded = false;
@@ -44,12 +49,49 @@ float Enemy::distance(const Vector2D& a, const Vector2D& b) {
     return std::sqrt(dx * dx + dy * dy);
 }
 
-void Enemy::updatePatrol() {
+bool Enemy::isHoleAt(float x, float y, Room* room) {
+    if (!room) return false;
+    // Utiliser isPlayerInHole avec un rayon très petit pour simuler un point
+    Vector2D checkPos(x, y);
+    return room->isPlayerInHole(checkPos, 1);
+}
+
+bool Enemy::isPathSafe(const Vector2D& target, Room* room) {
+    if (!room) return true;
+
+    // Vérifier plusieurs points le long du chemin
+    Vector2D direction = target - position;
+    float dist = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+    if (dist < 1.0f) return true;
+
+    direction.x /= dist;
+    direction.y /= dist;
+
+    // Vérifier des points tous les 10 pixels
+    for (float d = 0; d < dist; d += 10.0f) {
+        float checkX = position.x + direction.x * d;
+        float checkY = position.y + direction.y * d;
+
+        // Vérifier autour du rayon de l'ennemi
+        if (isHoleAt(checkX, checkY, room) ||
+            isHoleAt(checkX + radius, checkY, room) ||
+            isHoleAt(checkX - radius, checkY, room) ||
+            isHoleAt(checkX, checkY + radius, room) ||
+            isHoleAt(checkX, checkY - radius, room)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Enemy::updatePatrol(Room* room) {
     // Se déplacer vers la cible de patrouille
     float dist = distance(position, patrolTarget);
 
-    if (dist < 5.0f) {
-        // Arrivé à la cible, en générer une nouvelle
+    if (dist < 5.0f || !isPathSafe(patrolTarget, room)) {
+        // Arrivé à la cible ou chemin dangereux, en générer une nouvelle
         generatePatrolTarget();
     } else {
         // Se déplacer vers la cible
@@ -61,11 +103,19 @@ void Enemy::updatePatrol() {
         }
 
         velocity = direction * speed * 0.5f; // Patrouille plus lente
-        position += velocity;
+
+        // Vérifier si la prochaine position est sûre
+        Vector2D nextPos = position + velocity;
+        if (isPathSafe(nextPos, room)) {
+            position += velocity;
+        } else {
+            // Chemin bloqué, générer nouvelle cible
+            generatePatrolTarget();
+        }
     }
 }
 
-void Enemy::updateChase(const Vector2D& playerPos) {
+void Enemy::updateChase(const Vector2D& playerPos, Room* room) {
     // Se déplacer vers le joueur
     Vector2D direction = playerPos - position;
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -76,7 +126,26 @@ void Enemy::updateChase(const Vector2D& playerPos) {
     }
 
     velocity = direction * speed;
-    position += velocity;
+
+    // Vérifier si la prochaine position est sûre
+    Vector2D nextPos = position + velocity;
+    if (isPathSafe(nextPos, room)) {
+        position += velocity;
+    } else {
+        // Essayer de contourner par les côtés
+        Vector2D sideDir1(-direction.y, direction.x); // Perpendiculaire à gauche
+        Vector2D sideDir2(direction.y, -direction.x); // Perpendiculaire à droite
+
+        Vector2D sidePos1 = position + sideDir1 * speed;
+        Vector2D sidePos2 = position + sideDir2 * speed;
+
+        if (isPathSafe(sidePos1, room)) {
+            position = sidePos1;
+        } else if (isPathSafe(sidePos2, room)) {
+            position = sidePos2;
+        }
+        // Sinon rester sur place
+    }
 }
 
 void Enemy::updateAttack() {
@@ -89,8 +158,31 @@ void Enemy::updateAttack() {
     velocity.zero();
 }
 
-void Enemy::update(const Vector2D& playerPos) {
+void Enemy::updateKnockback() {
+    if (knockbackFrames > 0) {
+        // Appliquer le recul
+        position += knockbackVelocity;
+
+        // Réduire progressivement la vélocité du recul
+        knockbackVelocity.x *= 0.85f;
+        knockbackVelocity.y *= 0.85f;
+
+        knockbackFrames--;
+
+        if (knockbackFrames == 0) {
+            knockbackVelocity.zero();
+        }
+    }
+}
+
+void Enemy::update(const Vector2D& playerPos, Room* room) {
     if (state == EnemyState::DEAD) {
+        return;
+    }
+
+    // Gérer le recul en priorité
+    if (knockbackFrames > 0) {
+        updateKnockback();
         return;
     }
 
@@ -99,7 +191,7 @@ void Enemy::update(const Vector2D& playerPos) {
     // Machine à états
     switch (state) {
         case EnemyState::PATROL:
-            updatePatrol();
+            updatePatrol(room);
 
             // Détection du joueur
             if (distToPlayer < detectionRadius) {
@@ -108,7 +200,7 @@ void Enemy::update(const Vector2D& playerPos) {
             break;
 
         case EnemyState::CHASE:
-            updateChase(playerPos);
+            updateChase(playerPos, room);
 
             // Le joueur est à portée d'attaque
             if (distToPlayer < attackRadius) {
@@ -149,7 +241,7 @@ void Enemy::update(const Vector2D& playerPos) {
     }
 }
 
-void Enemy::takeDamage(int damage) {
+void Enemy::takeDamage(int damage, const Vector2D& attackerPos) {
     if (state == EnemyState::DEAD) {
         return;
     }
@@ -158,6 +250,20 @@ void Enemy::takeDamage(int damage) {
     if (health <= 0) {
         health = 0;
         state = EnemyState::DEAD;
+    } else {
+        // Calculer la direction du recul (opposée à l'attaquant)
+        Vector2D knockbackDir = position - attackerPos;
+        float length = std::sqrt(knockbackDir.x * knockbackDir.x + knockbackDir.y * knockbackDir.y);
+
+        if (length > 0) {
+            knockbackDir.x /= length;
+            knockbackDir.y /= length;
+        }
+
+        // Recul de 2 fois la taille de l'ennemi
+        float knockbackDistance = radius * 2.0f;
+        knockbackVelocity = knockbackDir * (knockbackDistance / knockbackDuration);
+        knockbackFrames = knockbackDuration;
     }
 }
 

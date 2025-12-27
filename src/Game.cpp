@@ -6,6 +6,7 @@
 #include "Room.hpp"
 #include "AudioManager.hpp"
 #include <iostream>
+#include <cstdlib>
 
 Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), gameOver(false) {}
 
@@ -223,13 +224,68 @@ void Game::update() {
 
                 // Créer la salle suivante
                 currentRoom = std::make_unique<Room>(windowWidth, windowHeight, currentLevel, menu->getDifficulty());
+
+                // Créer des ennemis à partir du niveau 2
+                enemies.clear();
+                if (currentLevel >= 2) {
+                    int numEnemies = 1 + (currentLevel - 2); // 1 ennemi au niveau 2, 2 au niveau 3, etc.
+                    if (numEnemies > 4) numEnemies = 4; // Maximum 4 ennemis
+
+                    for (int i = 0; i < numEnemies; i++) {
+                        // Positionner les ennemis dans la partie droite de la salle
+                        float enemyX = 400 + (std::rand() % 300);
+                        float enemyY = 100 + (std::rand() % 400);
+                        enemies.push_back(std::make_unique<Enemy>(enemyX, enemyY));
+                    }
+                }
+            }
+        }
+
+        // Mettre à jour les ennemis dans la salle
+        for (auto& enemy : enemies) {
+            enemy->update(playerPos, currentRoom.get());
+        }
+
+        // Détection de collision entre l'attaque du joueur et les ennemis
+        if (player->isAttacking()) {
+            Direction playerDir = player->getDirection();
+            int attackRange = player->getAttackRange();
+
+            for (auto& enemy : enemies) {
+                if (enemy->isDead()) continue;
+
+                Vector2D enemyPos = enemy->getPosition();
+                float dx = enemyPos.x - playerPos.x;
+                float dy = enemyPos.y - playerPos.y;
+
+                // Vérifier si l'ennemi est dans la direction de l'attaque
+                bool inAttackZone = false;
+
+                switch (playerDir) {
+                    case Direction::UP:
+                        inAttackZone = (dy < 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                        break;
+                    case Direction::DOWN:
+                        inAttackZone = (dy > 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                        break;
+                    case Direction::LEFT:
+                        inAttackZone = (dx < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                        break;
+                    case Direction::RIGHT:
+                        inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                        break;
+                }
+
+                if (inAttackZone) {
+                    enemy->takeDamage(1, playerPos);
+                }
             }
         }
     } else {
         // Mode exploration avec ennemis (ancien mode)
         // Mettre à jour les ennemis
         for (auto& enemy : enemies) {
-            enemy->update(playerPos);
+            enemy->update(playerPos, nullptr);
         }
 
         // Détection de collision entre l'attaque du joueur et les ennemis
@@ -261,7 +317,7 @@ void Game::update() {
                 }
 
                 if (inAttackZone) {
-                    enemy->takeDamage(1);
+                    enemy->takeDamage(1, playerPos);
                 }
             }
         }
@@ -322,6 +378,39 @@ void Game::drawPlayerLight(int playerX, int playerY) {
         }
     }
 
+    // Dessiner les auras des ennemis
+    for (const auto& enemy : enemies) {
+        if (enemy->isDead()) continue;
+
+        Vector2D enemyPos = enemy->getPosition();
+        int enemyX = static_cast<int>(enemyPos.x);
+        int enemyY = static_cast<int>(enemyPos.y);
+        int enemyLightRadius = enemy->getLightRadius();
+
+        int numCircles = 25;  // Moins de cercles pour une aura plus petite
+        for (int i = numCircles; i >= 0; i--) {
+            float t = static_cast<float>(i) / numCircles;
+            int currentRadius = static_cast<int>(enemyLightRadius * t);
+
+            // Luminosité réduite pour l'ennemi
+            int brightness = static_cast<int>(120.0f * (1.0f - t * t * t));
+
+            SDL_SetRenderDrawColor(renderer, brightness, brightness, brightness, 255);
+
+            int y1 = enemyY - currentRadius;
+            int y2 = enemyY + currentRadius;
+
+            for (int y = y1; y <= y2; y++) {
+                int dy = y - enemyY;
+                int halfWidth = static_cast<int>(std::sqrt(currentRadius * currentRadius - dy * dy));
+
+                SDL_RenderDrawLine(renderer,
+                                 enemyX - halfWidth, y,
+                                 enemyX + halfWidth, y);
+            }
+        }
+    }
+
     // Revenir au rendu normal
     SDL_SetRenderTarget(renderer, nullptr);
 
@@ -345,6 +434,11 @@ void Game::render() {
         // Cela multiplie les couleurs : noir (0,0,0) cache tout, blanc (255,255,255) révèle
         Vector2D playerPos = player->getPosition();
         drawPlayerLight(static_cast<int>(playerPos.x), static_cast<int>(playerPos.y));
+
+        // Rendre les ennemis APRÈS l'effet de lumière pour qu'ils soient visibles
+        for (auto& enemy : enemies) {
+            enemy->render(renderer);
+        }
 
         // Rendre le joueur APRÈS pour qu'il soit visible
         player->render(renderer);
