@@ -24,9 +24,7 @@ Player::Player(float x, float y)
       satelliteLagY(0.0f),
       previousPosition(x, y),
       attacking(false),
-      attackTimer(0),
-      health(3),
-      maxHealth(3) {
+      attackTimer(0) {
     // Initialiser l'historique de positions avec la position de départ
     for (int i = 0; i < SATELLITE_DELAY_FRAMES; i++) {
         positionHistory.push_back(Vector2D(x, y));
@@ -346,33 +344,6 @@ void Player::render(SDL_Renderer* renderer) {
                     }
                 }
                 break;
-        }
-    }
-
-    // Dessiner la vie (coeurs)
-    for (int i = 0; i < maxHealth; i++) {
-        int heartX = 15 + i * 30;
-        int heartY = 15;
-        int heartSize = 8;
-
-        if (i < health) {
-            // Coeur plein - rouge vif
-            SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255);
-            drawFilledCircle(renderer, heartX - heartSize/2, heartY, heartSize/2);
-            drawFilledCircle(renderer, heartX + heartSize/2, heartY, heartSize/2);
-
-            // Triangle du bas
-            for (int y = 0; y < heartSize; y++) {
-                int width = heartSize - y;
-                for (int x = -width/2; x <= width/2; x++) {
-                    SDL_RenderDrawPoint(renderer, heartX + x, heartY + y);
-                }
-            }
-        } else {
-            // Coeur vide - rouge sombre
-            SDL_SetRenderDrawColor(renderer, 100, 20, 20, 255);
-            drawCircle(renderer, heartX - heartSize/2, heartY, heartSize/2);
-            drawCircle(renderer, heartX + heartSize/2, heartY, heartSize/2);
         }
     }
 }

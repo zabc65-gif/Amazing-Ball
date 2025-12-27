@@ -71,9 +71,6 @@ private:
     bool attacking;
     int attackTimer;
     const int attackDuration = 15;
-
-    int health;
-    int maxHealth;
 };
 
 #endif
