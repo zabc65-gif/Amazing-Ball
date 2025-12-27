@@ -4,6 +4,7 @@
 #include "Enemy.hpp"
 #include "Menu.hpp"
 #include "Room.hpp"
+#include "AudioManager.hpp"
 #include <iostream>
 
 Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), gameOver(false) {}
@@ -80,6 +81,22 @@ bool Game::init(const char* title, int width, int height) {
     // Créer la texture de lumière
     createLightTexture();
 
+    // Initialiser l'AudioManager
+    if (!AudioManager::getInstance().init()) {
+        std::cerr << "Erreur d'initialisation de l'AudioManager" << std::endl;
+        // On continue même si l'audio ne fonctionne pas
+    } else {
+        // Charger la musique de gameplay
+        AudioManager::getInstance().loadMusic(MusicTrack::GAMEPLAY, "assets/music/gameplay.ogg");
+        // Volume par défaut à 64 (sur 128)
+        AudioManager::getInstance().setMusicVolume(64);
+
+        // Charger les effets sonores
+        AudioManager::getInstance().loadSound(SoundEffect::JUMP, "assets/sounds/jump.wav");
+        AudioManager::getInstance().loadSound(SoundEffect::ATTACK, "assets/sounds/attack.wav");
+        AudioManager::getInstance().setSoundVolume(96); // Volume des sons à 96/128
+    }
+
     return true;
 }
 
@@ -114,6 +131,9 @@ void Game::handleEvents() {
 
                 // Pas d'ennemis dans le mode salle
                 enemies.clear();
+
+                // Démarrer la musique de gameplay
+                AudioManager::getInstance().playMusic(MusicTrack::GAMEPLAY, -1); // -1 = boucle infinie
             } else if (menu->shouldContinueGame()) {
                 gameStarted = true;
                 menu->resetFlags();
@@ -131,6 +151,8 @@ void Game::handleEvents() {
                     gameStarted = false;
                     menu->setState(MenuState::MAIN_MENU);
                     menu->resetToMainMenu();
+                    // Arrêter la musique
+                    AudioManager::getInstance().stopMusic();
                 }
             }
         }
@@ -355,6 +377,9 @@ void Game::render() {
 }
 
 void Game::clean() {
+    // Nettoyer l'AudioManager
+    AudioManager::getInstance().cleanup();
+
     if (lightTexture) {
         SDL_DestroyTexture(lightTexture);
         lightTexture = nullptr;

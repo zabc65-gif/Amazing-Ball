@@ -1,4 +1,5 @@
 #include "Player.hpp"
+#include "AudioManager.hpp"
 #include <cmath>
 
 Player::Player(float x, float y)
@@ -64,12 +65,16 @@ void Player::handleEvent(SDL_Event& event) {
             isJumping = true;
             isGrounded = false;
             verticalVelocity = jumpVelocity;
+            // Jouer le son de saut
+            AudioManager::getInstance().playSound(SoundEffect::JUMP);
         }
 
         // Attaque avec Shift
         if (event.key.keysym.sym == SDLK_LSHIFT && !attacking) {
             attacking = true;
             attackTimer = attackDuration;
+            // Jouer le son d'attaque
+            AudioManager::getInstance().playSound(SoundEffect::ATTACK);
         }
     }
 }

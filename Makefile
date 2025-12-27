@@ -9,7 +9,7 @@ SDL2_CFLAGS = $(shell sdl2-config --cflags)
 SDL2_LDFLAGS = $(shell sdl2-config --libs)
 
 CXXFLAGS += $(SDL2_CFLAGS)
-LDFLAGS = $(SDL2_LDFLAGS)
+LDFLAGS = $(SDL2_LDFLAGS) -lSDL2_mixer
 
 SRC_DIR = src
 INCLUDE_DIR = include
