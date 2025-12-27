@@ -145,22 +145,48 @@ void Game::update() {
     Vector2D playerPos = player->getPosition();
 
     if (inRoom && currentRoom) {
+        // Mettre à jour la salle (timer, particules, animations)
+        currentRoom->update(1.0f / 60.0f); // deltaTime approximatif
+
+        // Démarrer le timer si le joueur quitte la zone de départ
+        static bool hasStarted = false;
+        if (!hasStarted && playerPos.x > 100) {
+            currentRoom->startTimer();
+            hasStarted = true;
+        }
+
         // Vérifier si le joueur est tombé dans un trou
         if (currentRoom->isPlayerInHole(playerPos, player->getRadius())) {
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
+            hasStarted = false; // Recommencer le timer
         }
 
         // Vérifier si le joueur a atteint la fin de la salle
-        if (currentRoom->hasReachedEnd(playerPos)) {
-            // Passer au niveau suivant
-            currentLevel++;
+        if (currentRoom->hasReachedEnd(playerPos) && !currentRoom->isCelebrating()) {
+            // Arrêter le timer et créer l'explosion de fête
+            currentRoom->stopTimer();
+            currentRoom->createCelebrationParticles(playerPos);
+        }
 
-            // Réinitialiser le joueur à la position de départ
-            player = std::make_unique<Player>(80, windowHeight / 2);
+        // Si la célébration est terminée, passer au niveau suivant
+        if (currentRoom->isCelebrating() && currentRoom->getScore() >= 0) {
+            static float celebrationTimer = 0.0f;
+            celebrationTimer += 1.0f / 60.0f;
 
-            // Créer la salle suivante
-            currentRoom = std::make_unique<Room>(windowWidth, windowHeight, currentLevel, menu->getDifficulty());
+            if (celebrationTimer > 2.0f) { // Attendre 2 secondes
+                celebrationTimer = 0.0f;
+                hasStarted = false;
+
+                // Passer au niveau suivant
+                currentLevel++;
+
+                // Réinitialiser le joueur à la position de départ
+                player = std::make_unique<Player>(80, windowHeight / 2);
+
+                // Créer la salle suivante
+                currentRoom = std::make_unique<Room>(windowWidth, windowHeight, currentLevel, menu->getDifficulty());
+            }
         }
     } else {
         // Mode exploration avec ennemis (ancien mode)
@@ -286,9 +312,8 @@ void Game::render() {
         // Rendre le joueur APRÈS pour qu'il soit visible
         player->render(renderer);
 
-        // Afficher le niveau actuel en haut à droite (texte simple)
-        // Pour l'instant, on utilise des rectangles pour représenter les chiffres
-        // On pourrait améliorer avec un vrai système de texte plus tard
+        // Afficher le HUD (score et temps) en premier plan, après l'effet de lumière
+        currentRoom->renderHUD(renderer);
     } else {
         // Mode exploration (ancien mode)
         // Rendre la carte
