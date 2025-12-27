@@ -39,21 +39,41 @@ void Player::handleInput() {
 
     velocity.zero();
 
+    bool up = keyState[SDL_SCANCODE_UP];
+    bool down = keyState[SDL_SCANCODE_DOWN];
+    bool left = keyState[SDL_SCANCODE_LEFT];
+    bool right = keyState[SDL_SCANCODE_RIGHT];
+
     // Déplacement avec les flèches
-    if (keyState[SDL_SCANCODE_UP]) {
+    if (up) {
         velocity.y = -speed;
-        direction = Direction::UP;
     }
-    if (keyState[SDL_SCANCODE_DOWN]) {
+    if (down) {
         velocity.y = speed;
-        direction = Direction::DOWN;
     }
-    if (keyState[SDL_SCANCODE_LEFT]) {
+    if (left) {
         velocity.x = -speed;
-        direction = Direction::LEFT;
     }
-    if (keyState[SDL_SCANCODE_RIGHT]) {
+    if (right) {
         velocity.x = speed;
+    }
+
+    // Déterminer la direction (incluant diagonales)
+    if (up && left) {
+        direction = Direction::UP_LEFT;
+    } else if (up && right) {
+        direction = Direction::UP_RIGHT;
+    } else if (down && left) {
+        direction = Direction::DOWN_LEFT;
+    } else if (down && right) {
+        direction = Direction::DOWN_RIGHT;
+    } else if (up) {
+        direction = Direction::UP;
+    } else if (down) {
+        direction = Direction::DOWN;
+    } else if (left) {
+        direction = Direction::LEFT;
+    } else if (right) {
         direction = Direction::RIGHT;
     }
 }
@@ -346,6 +366,50 @@ void Player::render(SDL_Renderer* renderer) {
                     int thickness = energyWidth - (i * energyWidth / energyLength);
                     for (int dy = -thickness; dy <= thickness; dy++) {
                         SDL_RenderDrawPoint(renderer, x, centerY + dy);
+                    }
+                }
+                break;
+            case Direction::UP_LEFT:
+                for (int i = 0; i < energyLength; i++) {
+                    int x = centerX - radius - i;
+                    int y = centerY - radius - i;
+                    int thickness = energyWidth - (i * energyWidth / energyLength);
+                    for (int t = -thickness; t <= thickness; t++) {
+                        SDL_RenderDrawPoint(renderer, x + t, y - t);
+                        SDL_RenderDrawPoint(renderer, x - t, y + t);
+                    }
+                }
+                break;
+            case Direction::UP_RIGHT:
+                for (int i = 0; i < energyLength; i++) {
+                    int x = centerX + radius + i;
+                    int y = centerY - radius - i;
+                    int thickness = energyWidth - (i * energyWidth / energyLength);
+                    for (int t = -thickness; t <= thickness; t++) {
+                        SDL_RenderDrawPoint(renderer, x - t, y - t);
+                        SDL_RenderDrawPoint(renderer, x + t, y + t);
+                    }
+                }
+                break;
+            case Direction::DOWN_LEFT:
+                for (int i = 0; i < energyLength; i++) {
+                    int x = centerX - radius - i;
+                    int y = centerY + radius + i;
+                    int thickness = energyWidth - (i * energyWidth / energyLength);
+                    for (int t = -thickness; t <= thickness; t++) {
+                        SDL_RenderDrawPoint(renderer, x - t, y - t);
+                        SDL_RenderDrawPoint(renderer, x + t, y + t);
+                    }
+                }
+                break;
+            case Direction::DOWN_RIGHT:
+                for (int i = 0; i < energyLength; i++) {
+                    int x = centerX + radius + i;
+                    int y = centerY + radius + i;
+                    int thickness = energyWidth - (i * energyWidth / energyLength);
+                    for (int t = -thickness; t <= thickness; t++) {
+                        SDL_RenderDrawPoint(renderer, x + t, y - t);
+                        SDL_RenderDrawPoint(renderer, x - t, y + t);
                     }
                 }
                 break;

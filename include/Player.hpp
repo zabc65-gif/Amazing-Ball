@@ -9,7 +9,11 @@ enum class Direction {
     DOWN = 0,
     UP = 1,
     LEFT = 2,
-    RIGHT = 3
+    RIGHT = 3,
+    DOWN_LEFT = 4,
+    DOWN_RIGHT = 5,
+    UP_LEFT = 6,
+    UP_RIGHT = 7
 };
 
 class Player {

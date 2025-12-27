@@ -281,6 +281,18 @@ void Game::update() {
                     case Direction::RIGHT:
                         inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
                         break;
+                    case Direction::UP_LEFT:
+                        inAttackZone = (dx < 0 && dy < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::UP_RIGHT:
+                        inAttackZone = (dx > 0 && dy < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::DOWN_LEFT:
+                        inAttackZone = (dx < 0 && dy > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::DOWN_RIGHT:
+                        inAttackZone = (dx > 0 && dy > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
                 }
 
                 if (inAttackZone) {
@@ -361,6 +373,18 @@ void Game::update() {
                         break;
                     case Direction::RIGHT:
                         inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                        break;
+                    case Direction::UP_LEFT:
+                        inAttackZone = (dx < 0 && dy < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::UP_RIGHT:
+                        inAttackZone = (dx > 0 && dy < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::DOWN_LEFT:
+                        inAttackZone = (dx < 0 && dy > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
+                        break;
+                    case Direction::DOWN_RIGHT:
+                        inAttackZone = (dx > 0 && dy > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= attackRange && std::abs(std::abs(dx) - std::abs(dy)) <= 20);
                         break;
                 }
 

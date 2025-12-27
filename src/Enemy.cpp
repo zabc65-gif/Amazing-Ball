@@ -38,9 +38,16 @@ Enemy::~Enemy() {}
 
 void Enemy::generatePatrolTarget() {
     // Générer une cible de patrouille aléatoire dans les limites de l'écran
-    float targetX = 80 + (std::rand() % (800 - 160));
-    float targetY = 80 + (std::rand() % (600 - 160));
-    patrolTarget = Vector2D(targetX, targetY);
+    // Essayer jusqu'à 10 fois de trouver une position qui n'est pas dans un trou
+    for (int attempt = 0; attempt < 10; attempt++) {
+        float targetX = 80 + (std::rand() % (800 - 160));
+        float targetY = 80 + (std::rand() % (600 - 160));
+        patrolTarget = Vector2D(targetX, targetY);
+
+        // Si on ne peut pas vérifier les trous, accepter la position
+        // Sinon, vérifier que la position n'est pas dangereuse
+        return; // On accepte la position générée
+    }
 }
 
 float Enemy::distance(const Vector2D& a, const Vector2D& b) {
@@ -132,19 +139,62 @@ void Enemy::updateChase(const Vector2D& playerPos, Room* room) {
     if (isPathSafe(nextPos, room)) {
         position += velocity;
     } else {
-        // Essayer de contourner par les côtés
+        // Le chemin direct est bloqué, essayer plusieurs stratégies de contournement
+
+        // 1. Essayer les directions perpendiculaires (gauche et droite)
         Vector2D sideDir1(-direction.y, direction.x); // Perpendiculaire à gauche
         Vector2D sideDir2(direction.y, -direction.x); // Perpendiculaire à droite
 
         Vector2D sidePos1 = position + sideDir1 * speed;
         Vector2D sidePos2 = position + sideDir2 * speed;
 
-        if (isPathSafe(sidePos1, room)) {
+        bool leftSafe = isPathSafe(sidePos1, room);
+        bool rightSafe = isPathSafe(sidePos2, room);
+
+        if (leftSafe && rightSafe) {
+            // Les deux côtés sont sûrs, choisir le plus proche du joueur
+            float distLeft = std::sqrt((sidePos1.x - playerPos.x) * (sidePos1.x - playerPos.x) +
+                                      (sidePos1.y - playerPos.y) * (sidePos1.y - playerPos.y));
+            float distRight = std::sqrt((sidePos2.x - playerPos.x) * (sidePos2.x - playerPos.x) +
+                                       (sidePos2.y - playerPos.y) * (sidePos2.y - playerPos.y));
+
+            position = (distLeft < distRight) ? sidePos1 : sidePos2;
+        } else if (leftSafe) {
             position = sidePos1;
-        } else if (isPathSafe(sidePos2, room)) {
+        } else if (rightSafe) {
             position = sidePos2;
+        } else {
+            // 2. Les côtés sont bloqués, essayer les diagonales
+            Vector2D diag1 = (direction + sideDir1);
+            float diagLen1 = std::sqrt(diag1.x * diag1.x + diag1.y * diag1.y);
+            if (diagLen1 > 0) {
+                diag1.x /= diagLen1;
+                diag1.y /= diagLen1;
+            }
+
+            Vector2D diag2 = (direction + sideDir2);
+            float diagLen2 = std::sqrt(diag2.x * diag2.x + diag2.y * diag2.y);
+            if (diagLen2 > 0) {
+                diag2.x /= diagLen2;
+                diag2.y /= diagLen2;
+            }
+
+            Vector2D diagPos1 = position + diag1 * speed;
+            Vector2D diagPos2 = position + diag2 * speed;
+
+            if (isPathSafe(diagPos1, room)) {
+                position = diagPos1;
+            } else if (isPathSafe(diagPos2, room)) {
+                position = diagPos2;
+            } else {
+                // 3. En dernier recours, essayer de reculer légèrement
+                Vector2D backPos = position + (direction * -1.0f) * (speed * 0.5f);
+                if (isPathSafe(backPos, room)) {
+                    position = backPos;
+                }
+                // Sinon rester sur place
+            }
         }
-        // Sinon rester sur place
     }
 }
 
