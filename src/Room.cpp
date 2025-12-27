@@ -431,7 +431,7 @@ void Room::render(SDL_Renderer* renderer) {
     }
 }
 
-void Room::renderHUD(SDL_Renderer* renderer, int totalScore) {
+void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime) {
     // Afficher les cœurs en haut à gauche
     int heartSize = 2;
     int heartSpacing = heartSize * 10;
@@ -439,11 +439,11 @@ void Room::renderHUD(SDL_Renderer* renderer, int totalScore) {
         drawHeart(renderer, 20 + i * heartSpacing, 20, heartSize, i < lives);
     }
 
-    // Afficher le temps en haut à droite
+    // Afficher le temps total + temps du niveau actuel en haut à droite
     if (timerRunning || celebrating || gameOver) {
-        int timeInSeconds = static_cast<int>(elapsedTime);
+        int displayTime = static_cast<int>(totalTime + elapsedTime);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        drawNumber(renderer, timeInSeconds, screenWidth - 100, 20, 2);
+        drawNumber(renderer, displayTime, screenWidth - 100, 20, 2);
 
         // Ajouter "s" pour secondes (dessin simple)
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -492,7 +492,8 @@ void Room::renderHUD(SDL_Renderer* renderer, int totalScore) {
         // Afficher le temps et le score total final au centre
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         int centerY = screenHeight / 2;
-        drawNumber(renderer, static_cast<int>(elapsedTime), screenWidth / 2 - 50, centerY, 4);
+        int finalTime = static_cast<int>(totalTime + elapsedTime);
+        drawNumber(renderer, finalTime, screenWidth / 2 - 50, centerY, 4);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
         int finalScore = totalScore + getScore();

@@ -6,7 +6,7 @@
 #include "Room.hpp"
 #include <iostream>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0) {}
+Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f) {}
 
 Game::~Game() {
     clean();
@@ -100,6 +100,7 @@ void Game::handleEvents() {
                 inRoom = true;
                 currentLevel = 1;
                 totalScore = 0; // Réinitialiser le score total
+                totalTime = 0.0f; // Réinitialiser le temps total
                 menu->resetFlags();
 
                 // Réinitialiser le jeu pour une nouvelle partie
@@ -181,8 +182,9 @@ void Game::update() {
                 celebrationTimer = 0.0f;
                 hasStarted = false;
 
-                // Ajouter le score du niveau actuel au score total
+                // Ajouter le score et le temps du niveau actuel au total
                 totalScore += currentRoom->getScore();
+                totalTime += currentRoom->getElapsedTime();
 
                 // Passer au niveau suivant
                 currentLevel++;
@@ -319,7 +321,7 @@ void Game::render() {
         player->render(renderer);
 
         // Afficher le HUD (score et temps) en premier plan, après l'effet de lumière
-        currentRoom->renderHUD(renderer, totalScore);
+        currentRoom->renderHUD(renderer, totalScore, totalTime);
     } else {
         // Mode exploration (ancien mode)
         // Rendre la carte

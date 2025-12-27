@@ -26,6 +26,7 @@ public:
 
     SDL_Renderer* getRenderer() const { return renderer; }
     int getTotalScore() const { return totalScore; }
+    float getTotalTime() const { return totalTime; }
 
     void drawPlayerLight(int playerX, int playerY);
     void createLightTexture();
@@ -50,6 +51,7 @@ private:
     int windowWidth;
     int windowHeight;
     int totalScore;
+    float totalTime;
 
     const int FPS = 60;
     const int frameDelay = 1000 / FPS;

@@ -26,7 +26,7 @@ public:
 
     void update(float deltaTime);
     void render(SDL_Renderer* renderer);
-    void renderHUD(SDL_Renderer* renderer, int totalScore); // Afficher le score et le temps en premier plan
+    void renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime); // Afficher le score et le temps en premier plan
     bool isPlayerInHole(const Vector2D& playerPos, int playerRadius) const;
     bool hasReachedEnd(const Vector2D& playerPos) const;
 
