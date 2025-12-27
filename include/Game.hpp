@@ -25,6 +25,7 @@ public:
     bool running() const { return isRunning; }
 
     SDL_Renderer* getRenderer() const { return renderer; }
+    int getTotalScore() const { return totalScore; }
 
     void drawPlayerLight(int playerX, int playerY);
     void createLightTexture();
@@ -48,6 +49,7 @@ private:
     int currentLevel;
     int windowWidth;
     int windowHeight;
+    int totalScore;
 
     const int FPS = 60;
     const int frameDelay = 1000 / FPS;

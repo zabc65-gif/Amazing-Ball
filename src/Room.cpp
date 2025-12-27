@@ -431,7 +431,7 @@ void Room::render(SDL_Renderer* renderer) {
     }
 }
 
-void Room::renderHUD(SDL_Renderer* renderer) {
+void Room::renderHUD(SDL_Renderer* renderer, int totalScore) {
     // Afficher les cœurs en haut à gauche
     int heartSize = 2;
     int heartSpacing = heartSize * 10;
@@ -468,11 +468,12 @@ void Room::renderHUD(SDL_Renderer* renderer) {
         }
     }
 
-    // Afficher le score en bas à droite
+    // Afficher le score total + score du niveau actuel en bas à droite
     if (timerRunning || celebrating || gameOver) {
-        int score = getScore();
+        int currentLevelScore = getScore();
+        int displayScore = totalScore + currentLevelScore;
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Jaune pour le score
-        drawNumber(renderer, score, screenWidth - 150, screenHeight - 50, 3);
+        drawNumber(renderer, displayScore, screenWidth - 150, screenHeight - 50, 3);
     }
 
     // Écran de game over
@@ -488,13 +489,14 @@ void Room::renderHUD(SDL_Renderer* renderer) {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
         // On pourrait utiliser drawText ici mais pour simplifier on affiche juste le message
 
-        // Afficher le temps et le score final au centre
+        // Afficher le temps et le score total final au centre
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         int centerY = screenHeight / 2;
         drawNumber(renderer, static_cast<int>(elapsedTime), screenWidth / 2 - 50, centerY, 4);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-        drawNumber(renderer, getScore(), screenWidth / 2 - 80, centerY + 80, 4);
+        int finalScore = totalScore + getScore();
+        drawNumber(renderer, finalScore, screenWidth / 2 - 80, centerY + 80, 4);
     }
 }
 
