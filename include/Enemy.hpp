@@ -71,6 +71,7 @@ private:
     void generatePatrolTarget();
     bool isHoleAt(float x, float y, Room* room);
     bool isPathSafe(const Vector2D& target, Room* room);
+    bool isInForbiddenZone(float x, float y) const;
 };
 
 #endif

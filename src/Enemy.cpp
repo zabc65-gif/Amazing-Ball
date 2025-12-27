@@ -38,22 +38,38 @@ Enemy::~Enemy() {}
 
 void Enemy::generatePatrolTarget() {
     // Générer une cible de patrouille aléatoire dans les limites de l'écran
-    // Essayer jusqu'à 10 fois de trouver une position qui n'est pas dans un trou
+    // en évitant les zones de départ (x < 100) et d'arrivée (x > 700)
+    // Essayer jusqu'à 10 fois de trouver une position qui n'est pas dans une zone interdite
     for (int attempt = 0; attempt < 10; attempt++) {
-        float targetX = 80 + (std::rand() % (800 - 160));
+        // Générer X entre 100 et 700 (éviter les zones de départ et d'arrivée)
+        float targetX = 100 + (std::rand() % 600);
         float targetY = 80 + (std::rand() % (600 - 160));
-        patrolTarget = Vector2D(targetX, targetY);
 
-        // Si on ne peut pas vérifier les trous, accepter la position
-        // Sinon, vérifier que la position n'est pas dangereuse
-        return; // On accepte la position générée
+        // Vérifier que la position n'est pas dans une zone interdite
+        if (!isInForbiddenZone(targetX, targetY)) {
+            patrolTarget = Vector2D(targetX, targetY);
+            return;
+        }
     }
+
+    // Si aucune position valide n'a été trouvée, utiliser une position centrale par défaut
+    patrolTarget = Vector2D(400, 300);
 }
 
 float Enemy::distance(const Vector2D& a, const Vector2D& b) {
     float dx = b.x - a.x;
     float dy = b.y - a.y;
     return std::sqrt(dx * dx + dy * dy);
+}
+
+bool Enemy::isInForbiddenZone(float x, float /* y */) const {
+    // Zone de départ (100 premiers pixels à gauche)
+    if (x < 100) return true;
+
+    // Zone d'arrivée (100 derniers pixels à droite)
+    if (x > 700) return true;
+
+    return false;
 }
 
 bool Enemy::isHoleAt(float x, float y, Room* room) {
@@ -65,6 +81,11 @@ bool Enemy::isHoleAt(float x, float y, Room* room) {
 
 bool Enemy::isPathSafe(const Vector2D& target, Room* room) {
     if (!room) return true;
+
+    // Vérifier si la cible est dans une zone interdite
+    if (isInForbiddenZone(target.x, target.y)) {
+        return false;
+    }
 
     // Vérifier plusieurs points le long du chemin
     Vector2D direction = target - position;
@@ -79,6 +100,11 @@ bool Enemy::isPathSafe(const Vector2D& target, Room* room) {
     for (float d = 0; d < dist; d += 10.0f) {
         float checkX = position.x + direction.x * d;
         float checkY = position.y + direction.y * d;
+
+        // Vérifier si le point est dans une zone interdite
+        if (isInForbiddenZone(checkX, checkY)) {
+            return false;
+        }
 
         // Vérifier autour du rayon de l'ennemi
         if (isHoleAt(checkX, checkY, room) ||
@@ -278,11 +304,15 @@ void Enemy::update(const Vector2D& playerPos, Room* room) {
             break;
     }
 
-    // Limites de l'écran
+    // Limites de l'écran et zones interdites
     if (position.x < 40 + radius) position.x = 40 + radius;
     if (position.x > 800 - 40 - radius) position.x = 800 - 40 - radius;
     if (position.y < 40 + radius) position.y = 40 + radius;
     if (position.y > 600 - 40 - radius) position.y = 600 - 40 - radius;
+
+    // Empêcher l'ennemi d'entrer dans les zones de départ et d'arrivée
+    if (position.x < 100) position.x = 100;
+    if (position.x > 700) position.x = 700;
 
     // Animation
     animationPhase += animationSpeed;
