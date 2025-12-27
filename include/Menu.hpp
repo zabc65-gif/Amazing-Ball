@@ -10,13 +10,23 @@ enum class MenuOption {
     CONTINUE,
     CREDITS,
     QUIT,
-    BACK
+    BACK,
+    DIFFICULTY_EASY,
+    DIFFICULTY_MEDIUM,
+    DIFFICULTY_HARD
 };
 
 enum class MenuState {
     MAIN_MENU,
+    DIFFICULTY_SELECTION,
     CREDITS_SCREEN,
     PLAYING
+};
+
+enum class Difficulty {
+    EASY = 1,
+    MEDIUM = 2,
+    HARD = 3
 };
 
 class Menu {
@@ -36,6 +46,8 @@ public:
     bool shouldQuit() const { return quit; }
     void resetFlags() { startNewGame = false; continueGame = false; quit = false; }
 
+    Difficulty getDifficulty() const { return difficulty; }
+
 private:
     MenuState state;
     int selectedOption;
@@ -44,6 +56,8 @@ private:
     bool startNewGame;
     bool continueGame;
     bool quit;
+
+    Difficulty difficulty;
 
     // Animation
     float titlePulse;

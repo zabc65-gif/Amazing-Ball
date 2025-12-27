@@ -3,9 +3,10 @@
 #include "Map.hpp"
 #include "Enemy.hpp"
 #include "Menu.hpp"
+#include "Room.hpp"
 #include <iostream>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false) {}
+Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600) {}
 
 Game::~Game() {
     clean();
@@ -36,6 +37,9 @@ bool Game::init(const char* title, int width, int height) {
     }
 
     isRunning = true;
+
+    windowWidth = width;
+    windowHeight = height;
 
     // Créer le menu
     menu = std::make_unique<Menu>();
@@ -93,15 +97,19 @@ void Game::handleEvents() {
             // Vérifier si le jeu doit démarrer
             if (menu->shouldStartNewGame()) {
                 gameStarted = true;
+                inRoom = true;
+                currentLevel = 1;
                 menu->resetFlags();
 
                 // Réinitialiser le jeu pour une nouvelle partie
-                player = std::make_unique<Player>(400, 300);
+                // Placer le joueur dans la zone de départ (à gauche)
+                player = std::make_unique<Player>(80, windowHeight / 2);
+
+                // Créer la première salle avec la difficulté choisie
+                currentRoom = std::make_unique<Room>(windowWidth, windowHeight, currentLevel, menu->getDifficulty());
+
+                // Pas d'ennemis dans le mode salle
                 enemies.clear();
-                enemies.push_back(std::make_unique<Enemy>(200, 150));
-                enemies.push_back(std::make_unique<Enemy>(600, 200));
-                enemies.push_back(std::make_unique<Enemy>(400, 400));
-                enemies.push_back(std::make_unique<Enemy>(150, 450));
             } else if (menu->shouldContinueGame()) {
                 gameStarted = true;
                 menu->resetFlags();
@@ -134,52 +142,74 @@ void Game::update() {
     player->handleInput();
     player->update();
 
-    // Mettre à jour les ennemis
     Vector2D playerPos = player->getPosition();
-    for (auto& enemy : enemies) {
-        enemy->update(playerPos);
-    }
 
-    // Détection de collision entre l'attaque du joueur et les ennemis
-    if (player->isAttacking()) {
-        Direction playerDir = player->getDirection();
-        int attackRange = player->getAttackRange();
+    if (inRoom && currentRoom) {
+        // Vérifier si le joueur est tombé dans un trou
+        if (currentRoom->isPlayerInHole(playerPos, player->getRadius())) {
+            // Réinitialiser le joueur à la position de départ
+            player = std::make_unique<Player>(80, windowHeight / 2);
+        }
 
+        // Vérifier si le joueur a atteint la fin de la salle
+        if (currentRoom->hasReachedEnd(playerPos)) {
+            // Passer au niveau suivant
+            currentLevel++;
+
+            // Réinitialiser le joueur à la position de départ
+            player = std::make_unique<Player>(80, windowHeight / 2);
+
+            // Créer la salle suivante
+            currentRoom = std::make_unique<Room>(windowWidth, windowHeight, currentLevel, menu->getDifficulty());
+        }
+    } else {
+        // Mode exploration avec ennemis (ancien mode)
+        // Mettre à jour les ennemis
         for (auto& enemy : enemies) {
-            Vector2D enemyPos = enemy->getPosition();
-            float dx = enemyPos.x - playerPos.x;
-            float dy = enemyPos.y - playerPos.y;
+            enemy->update(playerPos);
+        }
 
-            // Vérifier si l'ennemi est dans la direction de l'attaque
-            bool inAttackZone = false;
+        // Détection de collision entre l'attaque du joueur et les ennemis
+        if (player->isAttacking()) {
+            Direction playerDir = player->getDirection();
+            int attackRange = player->getAttackRange();
 
-            switch (playerDir) {
-                case Direction::UP:
-                    inAttackZone = (dy < 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
-                    break;
-                case Direction::DOWN:
-                    inAttackZone = (dy > 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
-                    break;
-                case Direction::LEFT:
-                    inAttackZone = (dx < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
-                    break;
-                case Direction::RIGHT:
-                    inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
-                    break;
-            }
+            for (auto& enemy : enemies) {
+                Vector2D enemyPos = enemy->getPosition();
+                float dx = enemyPos.x - playerPos.x;
+                float dy = enemyPos.y - playerPos.y;
 
-            if (inAttackZone) {
-                enemy->takeDamage(1);
+                // Vérifier si l'ennemi est dans la direction de l'attaque
+                bool inAttackZone = false;
+
+                switch (playerDir) {
+                    case Direction::UP:
+                        inAttackZone = (dy < 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                        break;
+                    case Direction::DOWN:
+                        inAttackZone = (dy > 0 && std::abs(dy) <= attackRange && std::abs(dx) <= 15);
+                        break;
+                    case Direction::LEFT:
+                        inAttackZone = (dx < 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                        break;
+                    case Direction::RIGHT:
+                        inAttackZone = (dx > 0 && std::abs(dx) <= attackRange && std::abs(dy) <= 15);
+                        break;
+                }
+
+                if (inAttackZone) {
+                    enemy->takeDamage(1);
+                }
             }
         }
-    }
 
-    // Supprimer les ennemis morts
-    enemies.erase(
-        std::remove_if(enemies.begin(), enemies.end(),
-            [](const std::unique_ptr<Enemy>& e) { return e->isDead(); }),
-        enemies.end()
-    );
+        // Supprimer les ennemis morts
+        enemies.erase(
+            std::remove_if(enemies.begin(), enemies.end(),
+                [](const std::unique_ptr<Enemy>& e) { return e->isDead(); }),
+            enemies.end()
+        );
+    }
 }
 
 void Game::createLightTexture() {
@@ -244,7 +274,23 @@ void Game::render() {
     if (!gameStarted) {
         // Afficher le menu
         menu->render(renderer);
+    } else if (inRoom && currentRoom) {
+        // Mode salle : afficher la salle
+        currentRoom->render(renderer);
+
+        // Appliquer le masque de lumière avec SDL_BLENDMODE_MOD
+        // Cela multiplie les couleurs : noir (0,0,0) cache tout, blanc (255,255,255) révèle
+        Vector2D playerPos = player->getPosition();
+        drawPlayerLight(static_cast<int>(playerPos.x), static_cast<int>(playerPos.y));
+
+        // Rendre le joueur APRÈS pour qu'il soit visible
+        player->render(renderer);
+
+        // Afficher le niveau actuel en haut à droite (texte simple)
+        // Pour l'instant, on utilise des rectangles pour représenter les chiffres
+        // On pourrait améliorer avec un vrai système de texte plus tard
     } else {
+        // Mode exploration (ancien mode)
         // Rendre la carte
         map->render(renderer);
 

@@ -8,6 +8,7 @@ Menu::Menu()
       startNewGame(false),
       continueGame(false),
       quit(false),
+      difficulty(Difficulty::MEDIUM),
       titlePulse(0.0f),
       titlePulseSpeed(0.05f) {}
 
@@ -34,9 +35,10 @@ void Menu::handleInput(SDL_Event& event) {
                 case SDLK_RETURN:
                 case SDLK_SPACE:
                     switch (selectedOption) {
-                        case 0: // Jouer
-                            startNewGame = true;
-                            state = MenuState::PLAYING;
+                        case 0: // Jouer - aller à la sélection de difficulté
+                            state = MenuState::DIFFICULTY_SELECTION;
+                            selectedOption = 1; // Sélectionner MOYEN par défaut
+                            numOptions = 3;
                             break;
                         case 1: // Continuer
                             continueGame = true;
@@ -53,6 +55,47 @@ void Menu::handleInput(SDL_Event& event) {
 
                 case SDLK_ESCAPE:
                     // Ne rien faire sur le menu principal
+                    break;
+            }
+        } else if (state == MenuState::DIFFICULTY_SELECTION) {
+            switch (event.key.keysym.sym) {
+                case SDLK_UP:
+                    selectedOption--;
+                    if (selectedOption < 0) {
+                        selectedOption = numOptions - 1;
+                    }
+                    break;
+
+                case SDLK_DOWN:
+                    selectedOption++;
+                    if (selectedOption >= numOptions) {
+                        selectedOption = 0;
+                    }
+                    break;
+
+                case SDLK_RETURN:
+                case SDLK_SPACE:
+                    // Définir la difficulté selon la sélection
+                    switch (selectedOption) {
+                        case 0:
+                            difficulty = Difficulty::EASY;
+                            break;
+                        case 1:
+                            difficulty = Difficulty::MEDIUM;
+                            break;
+                        case 2:
+                            difficulty = Difficulty::HARD;
+                            break;
+                    }
+                    startNewGame = true;
+                    state = MenuState::PLAYING;
+                    break;
+
+                case SDLK_ESCAPE:
+                    // Retour au menu principal
+                    state = MenuState::MAIN_MENU;
+                    selectedOption = 0;
+                    numOptions = 4;
                     break;
             }
         } else if (state == MenuState::CREDITS_SCREEN) {
@@ -325,6 +368,22 @@ void Menu::render(SDL_Renderer* renderer) {
         // Instructions en bas
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
         drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 100, 550, 1, false);
+
+    } else if (state == MenuState::DIFFICULTY_SELECTION) {
+        // Écran de sélection de difficulté
+        drawText(renderer, "CHOISIR DIFFICULTE", 200, 100, 3, false);
+
+        int menuY = 250;
+        int menuSpacing = 80;
+
+        // Options de difficulté
+        drawText(renderer, "FACILE", 320, menuY, 2, selectedOption == 0);
+        drawText(renderer, "MOYEN", 330, menuY + menuSpacing, 2, selectedOption == 1);
+        drawText(renderer, "DIFFICILE", 280, menuY + menuSpacing * 2, 2, selectedOption == 2);
+
+        // Instructions en bas
+        SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
+        drawText(renderer, "FLECHES   ENTREE   ECHAP POUR RETOUR", 130, 550, 1, false);
 
     } else if (state == MenuState::CREDITS_SCREEN) {
         // Écran des crédits
