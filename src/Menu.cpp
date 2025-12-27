@@ -387,20 +387,20 @@ void Menu::render(SDL_Renderer* renderer) {
 
     } else if (state == MenuState::CREDITS_SCREEN) {
         // Écran des crédits
-        drawText(renderer, "CREDITS", 320, 100, 3, false);
+        drawText(renderer, "CREDITS", 320, 50, 3, false);
 
-        int y = 220;
+        int y = 150;
         int spacing = 50;
 
         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
         drawText(renderer, "DEVELOPPEMENT", 250, y, 2, false);
         y += spacing;
-        drawText(renderer, "VOTRE NOM", 300, y, 1, false);
+        drawText(renderer, "BRUNO BOIRIE", 270, y, 1, false);
         y += spacing * 2;
 
         drawText(renderer, "GRAPHISMES", 280, y, 2, false);
         y += spacing;
-        drawText(renderer, "CUSTOM PIXEL ART", 230, y, 1, false);
+        drawText(renderer, "BRUNO BOIRIE", 270, y, 1, false);
         y += spacing * 2;
 
         drawText(renderer, "MOTEUR", 330, y, 2, false);
@@ -409,6 +409,6 @@ void Menu::render(SDL_Renderer* renderer) {
 
         // Instruction de retour
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
-        drawText(renderer, "APPUYEZ SUR ECHAP POUR REVENIR", 150, 550, 1, false);
+        drawText(renderer, "APPUYER SUR ECHAP POUR REVENIR", 160, 550, 1, false);
     }
 }
