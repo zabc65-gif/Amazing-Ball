@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cstdlib>
 
-Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), gameOver(false) {}
+Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), playerHealth(12), invincibilityFrames(0), gameOver(false) {}
 
 Game::~Game() {
     clean();
@@ -120,6 +120,8 @@ void Game::handleEvents() {
                 totalScore = 0; // Réinitialiser le score total
                 totalTime = 0.0f; // Réinitialiser le temps total
                 playerLives = 3; // Réinitialiser les vies
+                playerHealth = 12; // 3 cœurs × 4 quarts = 12
+                invincibilityFrames = 0;
                 gameOver = false; // Réinitialiser le game over
                 menu->resetFlags();
 
@@ -185,14 +187,19 @@ void Game::update() {
 
         // Vérifier si le joueur est tombé dans un trou
         if (currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !gameOver) {
-            // Perdre une vie
-            playerLives--;
-            if (playerLives <= 0) {
+            // Perdre une vie complète (4 quarts de cœur)
+            playerHealth -= 4;
+            if (playerHealth < 0) playerHealth = 0;
+            playerLives = (playerHealth + 3) / 4;
+
+            if (playerHealth <= 0) {
                 gameOver = true;
                 currentRoom->stopTimer();
             }
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
+            // Réinitialiser l'invincibilité
+            invincibilityFrames = invincibilityDuration;
             // Ne PAS réinitialiser hasStarted - le timer continue
         }
 
@@ -278,6 +285,47 @@ void Game::update() {
 
                 if (inAttackZone) {
                     enemy->takeDamage(1, playerPos);
+                }
+            }
+        }
+
+        // Décrémenter les frames d'invincibilité
+        if (invincibilityFrames > 0) {
+            invincibilityFrames--;
+        }
+
+        // Détection de collision entre le joueur et les ennemis
+        if (invincibilityFrames == 0 && !gameOver) {
+            for (const auto& enemy : enemies) {
+                if (enemy->isDead()) continue;
+
+                Vector2D enemyPos = enemy->getPosition();
+                float dx = enemyPos.x - playerPos.x;
+                float dy = enemyPos.y - playerPos.y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+
+                // Collision si la distance entre centres < somme des rayons
+                if (distance < (player->getRadius() + enemy->getRadius())) {
+                    // Perdre 1/4 de cœur
+                    playerHealth--;
+
+                    // Mettre à jour playerLives pour l'affichage
+                    playerLives = (playerHealth + 3) / 4; // Arrondir au cœur supérieur
+
+                    if (playerHealth <= 0) {
+                        playerHealth = 0;
+                        playerLives = 0;
+                        gameOver = true;
+                        if (currentRoom) {
+                            currentRoom->stopTimer();
+                        }
+                    }
+
+                    // Activer l'invincibilité
+                    invincibilityFrames = invincibilityDuration;
+
+                    // Ne vérifier qu'une collision par frame
+                    break;
                 }
             }
         }

@@ -25,7 +25,7 @@ public:
     Vector2D getPosition() const { return position; }
     bool isAttacking() const { return attacking; }
     Direction getDirection() const { return direction; }
-    int getAttackRange() const { return 30; }
+    int getAttackRange() const { return 45; }
     int getRadius() const { return radius; }
 
 private:

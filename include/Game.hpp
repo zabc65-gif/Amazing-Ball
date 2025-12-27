@@ -53,6 +53,9 @@ private:
     int totalScore;
     float totalTime;
     int playerLives;
+    int playerHealth; // Santé en quarts de cœur (4 = 1 cœur, 12 = 3 cœurs)
+    int invincibilityFrames; // Frames d'invincibilité après avoir pris un coup
+    const int invincibilityDuration = 90; // 1.5 secondes à 60 FPS
     bool gameOver;
 
     const int FPS = 60;
