@@ -5,6 +5,7 @@
 #include "Menu.hpp"
 #include "Room.hpp"
 #include "AudioManager.hpp"
+#include "ScoreManager.hpp"
 #include <iostream>
 #include <cstdlib>
 
@@ -195,6 +196,8 @@ void Game::update() {
             if (playerHealth <= 0) {
                 gameOver = true;
                 currentRoom->stopTimer();
+                // Sauvegarder le score si c'est un nouveau record
+                ScoreManager::getInstance().saveHighScore(totalScore);
             }
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
@@ -331,6 +334,8 @@ void Game::update() {
                         if (currentRoom) {
                             currentRoom->stopTimer();
                         }
+                        // Sauvegarder le score si c'est un nouveau record
+                        ScoreManager::getInstance().saveHighScore(totalScore);
                     }
 
                     // Activer l'invincibilité

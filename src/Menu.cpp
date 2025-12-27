@@ -1,5 +1,7 @@
 #include "Menu.hpp"
+#include "ScoreManager.hpp"
 #include <cmath>
+#include <string>
 
 Menu::Menu()
     : state(MenuState::MAIN_MENU),
@@ -373,6 +375,17 @@ void Menu::render(SDL_Renderer* renderer) {
         drawText(renderer, "CREDITS", 330, menuY + menuSpacing * 2, 2, selectedOption == 2);
         // "QUITTER" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
         drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 3, 2, selectedOption == 3);
+
+        // Afficher le meilleur score
+        int highScore = ScoreManager::getInstance().getHighScore();
+        if (highScore > 0) {
+            SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Couleur dorée
+            std::string scoreText = "MEILLEUR SCORE   " + std::to_string(highScore);
+            // Calculer la largeur approximative du texte pour le centrer
+            int scoreWidth = 10 * 2 * scoreText.length();
+            int scoreX = (800 - scoreWidth) / 2;
+            drawText(renderer, scoreText, scoreX, 190, 2, false);
+        }
 
         // Instructions en bas
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
