@@ -45,6 +45,11 @@ public:
     bool shouldContinueGame() const { return continueGame; }
     bool shouldQuit() const { return quit; }
     void resetFlags() { startNewGame = false; continueGame = false; quit = false; }
+    void resetToMainMenu() {
+        selectedOption = 0;
+        numOptions = 4;
+        resetFlags();
+    }
 
     Difficulty getDifficulty() const { return difficulty; }
 

@@ -130,6 +130,7 @@ void Game::handleEvents() {
                     // Retour au menu
                     gameStarted = false;
                     menu->setState(MenuState::MAIN_MENU);
+                    menu->resetToMainMenu();
                 }
             }
         }
