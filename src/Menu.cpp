@@ -344,46 +344,61 @@ void Menu::render(SDL_Renderer* renderer) {
         float pulse = 1.0f + 0.1f * std::sin(titlePulse);
         int titleSize = static_cast<int>(4 * pulse);
 
-        // Effet de halo autour du titre
+        // Calculer la position centrée du titre
+        // "AMAZING BALL" = 12 chars, size ~4 -> largeur approximative = 10*4*12 = 480px
+        int titleWidth = 10 * titleSize * 12;
+        int titleX = (800 - titleWidth) / 2;
+
+        // Effet de halo autour du titre (centré aussi)
         for (int i = 0; i < 3; i++) {
             int alpha = 50 - i * 15;
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
             int offset = (3 - i) * 3;
             // Simuler un halo avec des rectangles
-            SDL_Rect haloRect = {150 - offset, 80 - offset, 500 + offset * 2, 80 + offset * 2};
+            SDL_Rect haloRect = {titleX - offset, 80 - offset, titleWidth + offset * 2, 80 + offset * 2};
             SDL_RenderDrawRect(renderer, &haloRect);
         }
 
-        drawText(renderer, "AMAZING BALL", 180, 80, titleSize, false);
+        drawText(renderer, "AMAZING BALL", titleX, 80, titleSize, false);
 
-        // Options du menu
+        // Options du menu (toutes centrées)
         int menuY = 250;
         int menuSpacing = 70;
 
-        drawText(renderer, "JOUER", 340, menuY, 2, selectedOption == 0);
-        drawText(renderer, "CONTINUER", 290, menuY + menuSpacing, 2, selectedOption == 1);
-        drawText(renderer, "CREDITS", 310, menuY + menuSpacing * 2, 2, selectedOption == 2);
-        drawText(renderer, "QUITTER", 310, menuY + menuSpacing * 3, 2, selectedOption == 3);
+        // "JOUER" = 5 chars, size 2 -> largeur = 10*2*5 = 100px -> x_centre = (800-100)/2 = 350
+        drawText(renderer, "JOUER", 350, menuY, 2, selectedOption == 0);
+        // "CONTINUER" = 9 chars, size 2 -> largeur = 10*2*9 = 180px -> x_centre = (800-180)/2 = 310
+        drawText(renderer, "CONTINUER", 310, menuY + menuSpacing, 2, selectedOption == 1);
+        // "CREDITS" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
+        drawText(renderer, "CREDITS", 330, menuY + menuSpacing * 2, 2, selectedOption == 2);
+        // "QUITTER" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
+        drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 3, 2, selectedOption == 3);
 
         // Instructions en bas
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
-        drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 100, 550, 1, false);
+        // "FLECHES HAUT BAS   ENTREE POUR VALIDER" = 39 chars, size 1 -> largeur = 10*1*39 = 390px -> x_centre = (800-390)/2 = 205
+        drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 205, 550, 1, false);
 
     } else if (state == MenuState::DIFFICULTY_SELECTION) {
         // Écran de sélection de difficulté
-        drawText(renderer, "CHOISIR DIFFICULTE", 200, 100, 3, false);
+        // "CHOISIR DIFFICULTE" = 18 chars, size 3 -> largeur = 10*3*18 = 540px -> x_centre = (800-540)/2 = 130
+        drawText(renderer, "CHOISIR DIFFICULTE", 130, 100, 3, false);
 
         int menuY = 250;
         int menuSpacing = 80;
 
-        // Options de difficulté
-        drawText(renderer, "FACILE", 320, menuY, 2, selectedOption == 0);
-        drawText(renderer, "MOYEN", 330, menuY + menuSpacing, 2, selectedOption == 1);
-        drawText(renderer, "DIFFICILE", 280, menuY + menuSpacing * 2, 2, selectedOption == 2);
+        // Options de difficulté (toutes centrées)
+        // "FACILE" = 6 chars, size 2 -> largeur = 10*2*6 = 120px -> x_centre = (800-120)/2 = 340
+        drawText(renderer, "FACILE", 340, menuY, 2, selectedOption == 0);
+        // "MOYEN" = 5 chars, size 2 -> largeur = 10*2*5 = 100px -> x_centre = (800-100)/2 = 350
+        drawText(renderer, "MOYEN", 350, menuY + menuSpacing, 2, selectedOption == 1);
+        // "DIFFICILE" = 9 chars, size 2 -> largeur = 10*2*9 = 180px -> x_centre = (800-180)/2 = 310
+        drawText(renderer, "DIFFICILE", 310, menuY + menuSpacing * 2, 2, selectedOption == 2);
 
         // Instructions en bas
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
-        drawText(renderer, "FLECHES   ENTREE   ECHAP POUR RETOUR", 130, 550, 1, false);
+        // "FLECHES   ENTREE   ECHAP POUR RETOUR" = 37 chars, size 1 -> largeur = 10*1*37 = 370px -> x_centre = (800-370)/2 = 215
+        drawText(renderer, "FLECHES   ENTREE   ECHAP POUR RETOUR", 215, 550, 1, false);
 
     } else if (state == MenuState::CREDITS_SCREEN) {
         // Écran des crédits
