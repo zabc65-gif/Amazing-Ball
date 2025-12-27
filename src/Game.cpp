@@ -492,7 +492,7 @@ void Game::render() {
         player->render(renderer);
 
         // Afficher le HUD (score et temps) en premier plan, après l'effet de lumière
-        currentRoom->renderHUD(renderer, totalScore, totalTime, playerLives, gameOver);
+        currentRoom->renderHUD(renderer, totalScore, totalTime, playerHealth, gameOver);
     } else {
         // Mode exploration (ancien mode)
         // Rendre la carte

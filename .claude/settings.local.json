@@ -14,7 +14,13 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(ssh-keygen:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(brew fetch:*)",
+      "Bash(brew info:*)",
+      "Bash(./configure:*)",
+      "Bash(make:*)",
+      "Bash(sudo make install:*)",
+      "Bash(git restore:*)"
     ]
   }
 }

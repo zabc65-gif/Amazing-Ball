@@ -284,8 +284,10 @@ void Room::drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size
     }
 }
 
-void Room::drawHeart(SDL_Renderer* renderer, int x, int y, int size, bool filled) {
-    // Dessiner un cœur pixel art
+void Room::drawHeart(SDL_Renderer* renderer, int x, int y, int size, int quarters) {
+    // Dessiner un cœur pixel art avec support des quarts
+    // quarters: 0 = vide, 1 = 1/4, 2 = 2/4, 3 = 3/4, 4 = plein
+
     // Pattern du cœur (8x8)
     bool heartPattern[8][8] = {
         {0,1,1,0,0,1,1,0},
@@ -301,11 +303,28 @@ void Room::drawHeart(SDL_Renderer* renderer, int x, int y, int size, bool filled
     for (int py = 0; py < 8; py++) {
         for (int px = 0; px < 8; px++) {
             if (heartPattern[py][px]) {
-                if (filled) {
-                    // Cœur plein (rouge)
+                // Déterminer si ce pixel doit être rempli selon le niveau de quarts
+                bool shouldFill = false;
+
+                if (quarters == 4) {
+                    // Cœur complètement plein
+                    shouldFill = true;
+                } else if (quarters == 3) {
+                    // 3/4 plein - remplir tout sauf le quart supérieur droit
+                    shouldFill = !(px >= 4 && py < 2);
+                } else if (quarters == 2) {
+                    // 2/4 plein - remplir la moitié inférieure
+                    shouldFill = (py >= 4);
+                } else if (quarters == 1) {
+                    // 1/4 plein - remplir le quart inférieur
+                    shouldFill = (py >= 6);
+                }
+
+                if (shouldFill) {
+                    // Partie remplie (rouge)
                     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
                 } else {
-                    // Cœur vide (contour gris)
+                    // Partie vide ou contour (gris)
                     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
                 }
 
@@ -419,12 +438,24 @@ void Room::render(SDL_Renderer* renderer) {
     }
 }
 
-void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int lives, bool gameOver) {
+void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int playerHealth, bool gameOver) {
     // Afficher les cœurs en haut à gauche
+    // playerHealth est en quarts de cœur (12 = 3 cœurs pleins, 11 = 2 cœurs pleins + 3/4, etc.)
     int heartSize = 2;
     int heartSpacing = heartSize * 10;
+
     for (int i = 0; i < 3; i++) {
-        drawHeart(renderer, 20 + i * heartSpacing, 20, heartSize, i < lives);
+        // Calculer le nombre de quarts pour ce cœur
+        int quartersForThisHeart = playerHealth - (i * 4);
+
+        // Limiter entre 0 et 4
+        if (quartersForThisHeart > 4) {
+            quartersForThisHeart = 4;
+        } else if (quartersForThisHeart < 0) {
+            quartersForThisHeart = 0;
+        }
+
+        drawHeart(renderer, 20 + i * heartSpacing, 20, heartSize, quartersForThisHeart);
     }
 
     // Afficher le temps total + temps du niveau actuel en haut à droite
