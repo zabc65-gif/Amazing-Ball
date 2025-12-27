@@ -16,6 +16,8 @@ Room::Room(int screenWidth, int screenHeight, int level, Difficulty difficulty)
       timerRunning(false),
       celebrating(false),
       celebrationTime(0.0f),
+      lives(3),
+      gameOver(false),
       arrowAnimPhase(0.0f) {
 
     // Le rayon d'un trou est le double de la taille du joueur (rayon du joueur = 8)
@@ -104,6 +106,16 @@ int Room::getScore() const {
     int score = 1000 - static_cast<int>(elapsedTime * 10);
     if (score < 0) score = 0;
     return score;
+}
+
+void Room::loseLife() {
+    if (lives > 0) {
+        lives--;
+        if (lives <= 0) {
+            gameOver = true;
+            stopTimer();
+        }
+    }
 }
 
 void Room::update(float deltaTime) {
@@ -284,6 +296,43 @@ void Room::drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size
     }
 }
 
+void Room::drawHeart(SDL_Renderer* renderer, int x, int y, int size, bool filled) {
+    // Dessiner un cœur pixel art
+    // Pattern du cœur (8x8)
+    bool heartPattern[8][8] = {
+        {0,1,1,0,0,1,1,0},
+        {1,1,1,1,1,1,1,1},
+        {1,1,1,1,1,1,1,1},
+        {1,1,1,1,1,1,1,1},
+        {0,1,1,1,1,1,1,0},
+        {0,0,1,1,1,1,0,0},
+        {0,0,0,1,1,0,0,0},
+        {0,0,0,0,0,0,0,0}
+    };
+
+    for (int py = 0; py < 8; py++) {
+        for (int px = 0; px < 8; px++) {
+            if (heartPattern[py][px]) {
+                if (filled) {
+                    // Cœur plein (rouge)
+                    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+                } else {
+                    // Cœur vide (contour gris)
+                    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+                }
+
+                for (int sy = 0; sy < size; sy++) {
+                    for (int sx = 0; sx < size; sx++) {
+                        SDL_RenderDrawPoint(renderer,
+                                          x + px * size + sx,
+                                          y + py * size + sy);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void Room::render(SDL_Renderer* renderer) {
     // Fond de la salle (couleur légèrement différente)
     SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255);
@@ -383,8 +432,15 @@ void Room::render(SDL_Renderer* renderer) {
 }
 
 void Room::renderHUD(SDL_Renderer* renderer) {
+    // Afficher les cœurs en haut à gauche
+    int heartSize = 2;
+    int heartSpacing = heartSize * 10;
+    for (int i = 0; i < 3; i++) {
+        drawHeart(renderer, 20 + i * heartSpacing, 20, heartSize, i < lives);
+    }
+
     // Afficher le temps en haut à droite
-    if (timerRunning || celebrating) {
+    if (timerRunning || celebrating || gameOver) {
         int timeInSeconds = static_cast<int>(elapsedTime);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         drawNumber(renderer, timeInSeconds, screenWidth - 100, 20, 2);
@@ -413,10 +469,32 @@ void Room::renderHUD(SDL_Renderer* renderer) {
     }
 
     // Afficher le score en bas à droite
-    if (timerRunning || celebrating) {
+    if (timerRunning || celebrating || gameOver) {
         int score = getScore();
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Jaune pour le score
         drawNumber(renderer, score, screenWidth - 150, screenHeight - 50, 3);
+    }
+
+    // Écran de game over
+    if (gameOver) {
+        // Fond semi-transparent
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+        SDL_Rect overlay = {0, 0, screenWidth, screenHeight};
+        SDL_RenderFillRect(renderer, &overlay);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+        // Texte "GAME OVER" centré (simplifié avec des rectangles)
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        // On pourrait utiliser drawText ici mais pour simplifier on affiche juste le message
+
+        // Afficher le temps et le score final au centre
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        int centerY = screenHeight / 2;
+        drawNumber(renderer, static_cast<int>(elapsedTime), screenWidth / 2 - 50, centerY, 4);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        drawNumber(renderer, getScore(), screenWidth / 2 - 80, centerY + 80, 4);
     }
 }
 

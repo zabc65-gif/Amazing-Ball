@@ -33,8 +33,14 @@ public:
     void startTimer();
     void stopTimer();
     int getScore() const;
+    float getElapsedTime() const { return elapsedTime; }
     bool isCelebrating() const { return celebrating; }
     void createCelebrationParticles(const Vector2D& position);
+
+    // Système de vies
+    int getLives() const { return lives; }
+    void loseLife();
+    bool isGameOver() const { return lives <= 0; }
 
 private:
     int screenWidth;
@@ -53,12 +59,17 @@ private:
     bool celebrating;
     float celebrationTime;
 
+    // Système de vies
+    int lives;
+    bool gameOver;
+
     // Animation des flèches
     float arrowAnimPhase;
 
     void generateHoles();
     void drawArrow(SDL_Renderer* renderer, int x, int y, int size);
     void drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size);
+    void drawHeart(SDL_Renderer* renderer, int x, int y, int size, bool filled);
 };
 
 #endif

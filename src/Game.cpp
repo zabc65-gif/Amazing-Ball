@@ -156,21 +156,23 @@ void Game::update() {
         }
 
         // Vérifier si le joueur est tombé dans un trou
-        if (currentRoom->isPlayerInHole(playerPos, player->getRadius())) {
+        if (currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !currentRoom->isGameOver()) {
+            // Perdre une vie
+            currentRoom->loseLife();
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
-            hasStarted = false; // Recommencer le timer
+            // Ne PAS réinitialiser hasStarted - le timer continue
         }
 
         // Vérifier si le joueur a atteint la fin de la salle
-        if (currentRoom->hasReachedEnd(playerPos) && !currentRoom->isCelebrating()) {
+        if (currentRoom->hasReachedEnd(playerPos) && !currentRoom->isCelebrating() && !currentRoom->isGameOver()) {
             // Arrêter le timer et créer l'explosion de fête
             currentRoom->stopTimer();
             currentRoom->createCelebrationParticles(playerPos);
         }
 
         // Si la célébration est terminée, passer au niveau suivant
-        if (currentRoom->isCelebrating() && currentRoom->getScore() >= 0) {
+        if (currentRoom->isCelebrating() && currentRoom->getScore() >= 0 && !currentRoom->isGameOver()) {
             static float celebrationTimer = 0.0f;
             celebrationTimer += 1.0f / 60.0f;
 
