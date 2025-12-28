@@ -14,7 +14,6 @@ Player::Player(float x, float y)
       gravity(0.6f),          // Force de gravité
       verticalVelocity(0.0f),
       groundLevel(y),
-      shadowY(y + 25),        // Position initiale de l'ombre
       haloPhase(0.0f),
       haloSpeed(0.08f),
       satelliteOffsetX(25.0f),  // À droite du joueur
@@ -131,15 +130,12 @@ void Player::update() {
             isGrounded = true;
             isJumping = false;
         }
-        // L'ombre reste fixe pendant le saut (shadowY ne change pas)
     } else {
         // Au sol, mettre à jour groundLevel AVANT le mouvement
         // pour capturer la position actuelle comme point d'atterrissage
         groundLevel = position.y;
         // Puis appliquer le mouvement normalement (horizontal ET vertical)
         position += velocity;
-        // Mettre à jour la position de l'ombre pour qu'elle suive le joueur au sol
-        shadowY = position.y + 25;
     }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
@@ -312,10 +308,14 @@ void Player::render(SDL_Renderer* renderer) {
 
     // ===== JOUEUR =====
     // Ombre du joueur - dessinée en premier pour être derrière le halo
-    // L'ombre utilise shadowY qui est mise à jour dans update()
-    // - Au sol: suit le joueur (position.y + 25)
-    // - En l'air: reste fixe à la position où le saut a commencé
-    int playerShadowY = static_cast<int>(shadowY);
+    // Quand le joueur est au sol, l'ombre est sous lui
+    // Quand il saute, l'ombre reste au groundLevel
+    int playerShadowY;
+    if (isGrounded) {
+        playerShadowY = centerY + 25;  // Ombre sous le joueur quand il est au sol
+    } else {
+        playerShadowY = static_cast<int>(groundLevel);  // Ombre reste au sol pendant le saut
+    }
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 60);
     drawFilledCircle(renderer, centerX, playerShadowY, radius + 2);
 
