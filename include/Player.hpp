@@ -52,6 +52,7 @@ private:
     float gravity;
     float verticalVelocity;
     float groundLevel;
+    float shadowY;  // Position Y de l'ombre (fixe pendant le saut)
 
     // Animation de pulsation du halo
     float haloPhase;
