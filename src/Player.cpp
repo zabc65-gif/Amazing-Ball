@@ -85,6 +85,7 @@ void Player::handleEvent(SDL_Event& event) {
             isJumping = true;
             isGrounded = false;
             verticalVelocity = jumpVelocity;
+            groundLevel = position.y;  // Capturer la position Y actuelle comme niveau du sol
             // Jouer le son de saut
             AudioManager::getInstance().playSound(SoundEffect::JUMP);
         }
