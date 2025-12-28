@@ -93,7 +93,7 @@ void Player::handleEvent(SDL_Event& event) {
             isJumping = true;
             isGrounded = false;
             verticalVelocity = jumpVelocity;
-            groundLevel = position.y;  // Capturer la position Y actuelle comme niveau du sol
+            // groundLevel est déjà à jour car on le met à jour continuellement dans update()
             // Jouer le son de saut
             AudioManager::getInstance().playSound(SoundEffect::JUMP);
         }
@@ -111,7 +111,8 @@ void Player::handleEvent(SDL_Event& event) {
 void Player::update() {
     // Physique du saut
     if (!isGrounded) {
-        // Pendant le saut, ne bouger que horizontalement
+        // Pendant le saut, le joueur continue son mouvement horizontal mais pas vertical
+        // Le mouvement vertical est géré uniquement par la physique du saut
         position.x += velocity.x;
 
         // Appliquer la gravité
@@ -126,8 +127,10 @@ void Player::update() {
             isJumping = false;
         }
     } else {
-        // Au sol, appliquer le mouvement normalement
+        // Au sol, appliquer le mouvement normalement (horizontal ET vertical)
         position += velocity;
+        // Mettre à jour groundLevel en continu quand on est au sol
+        groundLevel = position.y;
     }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
