@@ -308,7 +308,8 @@ void Player::render(SDL_Renderer* renderer) {
 
     // ===== JOUEUR =====
     // Ombre du joueur - dessinée en premier pour être derrière le halo
-    int playerShadowY = centerY + 25;  // Bien en dessous pour être visible
+    // L'ombre reste au sol (groundLevel) quand le joueur saute
+    int playerShadowY = static_cast<int>(groundLevel);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 60);
     drawFilledCircle(renderer, centerX, playerShadowY, radius + 2);
 
