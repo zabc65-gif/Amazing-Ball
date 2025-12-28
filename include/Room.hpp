@@ -61,6 +61,7 @@ private:
     void drawArrow(SDL_Renderer* renderer, int x, int y, int size);
     void drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size);
     void drawHeart(SDL_Renderer* renderer, int x, int y, int size, int quarters);
+    void drawText(SDL_Renderer* renderer, const std::string& text, int x, int y, int size);
 };
 
 #endif

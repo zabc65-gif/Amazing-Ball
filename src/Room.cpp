@@ -345,6 +345,18 @@ void Room::render(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255);
     SDL_RenderClear(renderer);
 
+    // Afficher le texte d'instruction en haut de l'écran
+    std::string instruction = "Rejoins l'autre cote";
+    int textSize = 2;
+    int charWidth = 8 * textSize;
+    int spacing = 2 * textSize;
+    int textWidth = instruction.length() * (charWidth + spacing);
+    int textX = (screenWidth - textWidth) / 2;
+    int textY = 15;
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 100, 255);  // Jaune clair
+    drawText(renderer, instruction, textX, textY, textSize);
+
     // Dessiner la zone de départ (gauche) en vert
     SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255);
     SDL_Rect startZone = {0, 0, 100, screenHeight};
@@ -618,6 +630,121 @@ void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, in
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
         int finalScore = totalScore + getScore();
         drawNumber(renderer, finalScore, screenWidth / 2 - 80, centerY + 80, 4);
+    }
+}
+
+void Room::drawText(SDL_Renderer* renderer, const std::string& text, int x, int y, int size) {
+    // Fonction pour dessiner du texte pixel art
+    // Chaque caractère fait 8x8 pixels de base, multiplié par size
+
+    int charWidth = 8 * size;
+    int spacing = 2 * size;
+    int currentX = x;
+
+    for (char c : text) {
+        // Dessiner un rectangle pour chaque caractère
+        if (c != ' ') {
+            int pixelSize = size;
+
+            // Dessiner une forme de base pour chaque lettre
+            for (int py = 0; py < 7; py++) {
+                for (int px = 0; px < 5; px++) {
+                    bool drawPixel = false;
+
+                    // Patterns pour les lettres
+                    switch (c) {
+                        case 'A': case 'a':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py > 0 && py < 7 && (px == 0 || px == 4)) ||
+                                       (py == 3 && px > 0 && px < 4);
+                            break;
+                        case 'E': case 'e':
+                            drawPixel = (px == 0) ||
+                                       (py == 0) ||
+                                       (py == 3 && px < 4) ||
+                                       (py == 6);
+                            break;
+                        case 'I': case 'i':
+                            drawPixel = (px == 2) ||
+                                       (py == 0) ||
+                                       (py == 6);
+                            break;
+                        case 'J': case 'j':
+                            drawPixel = (py == 0) ||
+                                       (px == 3 && py < 6) ||
+                                       (py == 6 && px < 4) ||
+                                       (px == 0 && py == 5);
+                            break;
+                        case 'L': case 'l':
+                            drawPixel = (px == 0) ||
+                                       (py == 6);
+                            break;
+                        case 'N': case 'n':
+                            drawPixel = (px == 0) ||
+                                       (px == 4) ||
+                                       (py == px && px < 5);
+                            break;
+                        case 'O': case 'o':
+                            drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                       (py == 6 && px > 0 && px < 4) ||
+                                       ((px == 0 || px == 4) && py > 0 && py < 6);
+                            break;
+                        case 'R': case 'r':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 3 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 3) ||
+                                       (py - 3 == px && px > 0);
+                            break;
+                        case 'S': case 's':
+                            drawPixel = (py == 0 && px > 0) ||
+                                       (px == 0 && py > 0 && py < 3) ||
+                                       (py == 3 && px > 0 && px < 4) ||
+                                       (px == 4 && py > 3 && py < 6) ||
+                                       (py == 6 && px < 4);
+                            break;
+                        case 'T': case 't':
+                            drawPixel = (py == 0) ||
+                                       (px == 2);
+                            break;
+                        case 'U': case 'u':
+                            drawPixel = ((px == 0 || px == 4) && py < 6) ||
+                                       (py == 6 && px > 0 && px < 4);
+                            break;
+                        case 'C': case 'c':
+                            drawPixel = (py == 0 && px > 0) ||
+                                       (py == 6 && px > 0) ||
+                                       (px == 0 && py > 0 && py < 6);
+                            break;
+                        case 'D': case 'd':
+                            drawPixel = (px == 0) ||
+                                       (py == 0 && px < 4) ||
+                                       (py == 6 && px < 4) ||
+                                       (px == 4 && py > 0 && py < 6);
+                            break;
+                        case '\'':
+                            drawPixel = (px == 2 && py < 2);
+                            break;
+                        default:
+                            // Pour les caractères non définis, dessiner un bloc simple
+                            drawPixel = (px == 2 && py > 1 && py < 5);
+                            break;
+                    }
+
+                    if (drawPixel) {
+                        for (int sy = 0; sy < pixelSize; sy++) {
+                            for (int sx = 0; sx < pixelSize; sx++) {
+                                SDL_RenderDrawPoint(renderer,
+                                                  currentX + px * pixelSize + sx,
+                                                  y + py * pixelSize + sy);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        currentX += charWidth + spacing;
     }
 }
 
