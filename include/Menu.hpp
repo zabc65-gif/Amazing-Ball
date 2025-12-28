@@ -47,7 +47,7 @@ public:
     void resetFlags() { startNewGame = false; continueGame = false; quit = false; }
     void resetToMainMenu() {
         selectedOption = 0;
-        numOptions = 4;
+        numOptions = 3;
         resetFlags();
     }
 

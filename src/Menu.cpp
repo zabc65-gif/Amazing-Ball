@@ -6,7 +6,7 @@
 Menu::Menu()
     : state(MenuState::MAIN_MENU),
       selectedOption(0),
-      numOptions(4),
+      numOptions(3),
       startNewGame(false),
       continueGame(false),
       quit(false),
@@ -42,14 +42,10 @@ void Menu::handleInput(SDL_Event& event) {
                             selectedOption = 1; // Sélectionner MOYEN par défaut
                             numOptions = 3;
                             break;
-                        case 1: // Continuer
-                            continueGame = true;
-                            state = MenuState::PLAYING;
-                            break;
-                        case 2: // Crédits
+                        case 1: // Crédits
                             state = MenuState::CREDITS_SCREEN;
                             break;
-                        case 3: // Quitter
+                        case 2: // Quitter
                             quit = true;
                             break;
                     }
@@ -420,12 +416,10 @@ void Menu::render(SDL_Renderer* renderer) {
 
         // "JOUER" = 5 chars, size 2 -> largeur = 10*2*5 = 100px -> x_centre = (800-100)/2 = 350
         drawText(renderer, "JOUER", 350, menuY, 2, selectedOption == 0);
-        // "CONTINUER" = 9 chars, size 2 -> largeur = 10*2*9 = 180px -> x_centre = (800-180)/2 = 310
-        drawText(renderer, "CONTINUER", 310, menuY + menuSpacing, 2, selectedOption == 1);
         // "CREDITS" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
-        drawText(renderer, "CREDITS", 330, menuY + menuSpacing * 2, 2, selectedOption == 2);
+        drawText(renderer, "CREDITS", 330, menuY + menuSpacing, 2, selectedOption == 1);
         // "QUITTER" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
-        drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 3, 2, selectedOption == 3);
+        drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 2, 2, selectedOption == 2);
 
         // Afficher les meilleurs scores par difficulté (alignés à gauche)
         int scoreEasy = ScoreManager::getInstance().getHighScore(Difficulty::EASY);
