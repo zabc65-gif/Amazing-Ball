@@ -4,7 +4,7 @@
 
 const char* ScoreManager::SCORE_FILE = "amazing_ball_highscore.dat";
 
-ScoreManager::ScoreManager() : highScore(0) {
+ScoreManager::ScoreManager() : highScoreEasy(0), highScoreMedium(0), highScoreHard(0) {
     loadHighScore();
 }
 
@@ -26,26 +26,41 @@ bool ScoreManager::loadHighScore() {
 
     if (!file.is_open()) {
         // Fichier n'existe pas encore, c'est normal au premier lancement
-        highScore = 0;
+        highScoreEasy = 0;
+        highScoreMedium = 0;
+        highScoreHard = 0;
         return false;
     }
 
-    file >> highScore;
+    file >> highScoreEasy >> highScoreMedium >> highScoreHard;
     file.close();
 
-    // Validation du score chargé
-    if (highScore < 0) {
-        highScore = 0;
-        return false;
-    }
+    // Validation des scores chargés
+    if (highScoreEasy < 0) highScoreEasy = 0;
+    if (highScoreMedium < 0) highScoreMedium = 0;
+    if (highScoreHard < 0) highScoreHard = 0;
 
     return true;
 }
 
-void ScoreManager::saveHighScore(int score) {
-    // Ne sauvegarder que si c'est un nouveau record
-    if (score > highScore) {
-        highScore = score;
+void ScoreManager::saveHighScore(int score, Difficulty difficulty) {
+    // Déterminer quel score mettre à jour
+    int* targetScore = nullptr;
+    switch (difficulty) {
+        case Difficulty::EASY:
+            targetScore = &highScoreEasy;
+            break;
+        case Difficulty::MEDIUM:
+            targetScore = &highScoreMedium;
+            break;
+        case Difficulty::HARD:
+            targetScore = &highScoreHard;
+            break;
+    }
+
+    // Ne sauvegarder que si c'est un nouveau record pour cette difficulté
+    if (targetScore && score > *targetScore) {
+        *targetScore = score;
 
         std::ofstream file(getScoreFilePath());
 
@@ -54,7 +69,20 @@ void ScoreManager::saveHighScore(int score) {
             return;
         }
 
-        file << highScore;
+        file << highScoreEasy << " " << highScoreMedium << " " << highScoreHard;
         file.close();
+    }
+}
+
+int ScoreManager::getHighScore(Difficulty difficulty) const {
+    switch (difficulty) {
+        case Difficulty::EASY:
+            return highScoreEasy;
+        case Difficulty::MEDIUM:
+            return highScoreMedium;
+        case Difficulty::HARD:
+            return highScoreHard;
+        default:
+            return 0;
     }
 }

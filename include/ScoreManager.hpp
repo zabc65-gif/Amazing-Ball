@@ -2,14 +2,15 @@
 #define SCOREMANAGER_HPP
 
 #include <string>
+#include "Menu.hpp"
 
 class ScoreManager {
 public:
     static ScoreManager& getInstance();
 
     bool loadHighScore();
-    void saveHighScore(int score);
-    int getHighScore() const { return highScore; }
+    void saveHighScore(int score, Difficulty difficulty);
+    int getHighScore(Difficulty difficulty) const;
 
 private:
     ScoreManager();
@@ -20,7 +21,9 @@ private:
 
     std::string getScoreFilePath() const;
 
-    int highScore;
+    int highScoreEasy;
+    int highScoreMedium;
+    int highScoreHard;
     static const char* SCORE_FILE;
 };
 

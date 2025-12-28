@@ -197,7 +197,7 @@ void Game::update() {
                 gameOver = true;
                 currentRoom->stopTimer();
                 // Sauvegarder le score si c'est un nouveau record
-                ScoreManager::getInstance().saveHighScore(totalScore);
+                ScoreManager::getInstance().saveHighScore(totalScore, menu->getDifficulty());
             }
             // Réinitialiser le joueur à la position de départ
             player = std::make_unique<Player>(80, windowHeight / 2);
@@ -335,7 +335,7 @@ void Game::update() {
                             currentRoom->stopTimer();
                         }
                         // Sauvegarder le score si c'est un nouveau record
-                        ScoreManager::getInstance().saveHighScore(totalScore);
+                        ScoreManager::getInstance().saveHighScore(totalScore, menu->getDifficulty());
                     }
 
                     // Activer l'invincibilité
