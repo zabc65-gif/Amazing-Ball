@@ -345,18 +345,6 @@ void Room::render(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255);
     SDL_RenderClear(renderer);
 
-    // Afficher le texte d'instruction en haut de l'écran
-    std::string instruction = "Rejoins l'autre cote";
-    int textSize = 2;
-    int charWidth = 8 * textSize;
-    int spacing = 2 * textSize;
-    int textWidth = instruction.length() * (charWidth + spacing);
-    int textX = (screenWidth - textWidth) / 2;
-    int textY = 15;
-
-    SDL_SetRenderDrawColor(renderer, 255, 255, 100, 255);  // Jaune clair
-    drawText(renderer, instruction, textX, textY, textSize);
-
     // Dessiner la zone de départ (gauche) en vert
     SDL_SetRenderDrawColor(renderer, 0, 100, 0, 255);
     SDL_Rect startZone = {0, 0, 100, screenHeight};
@@ -448,6 +436,18 @@ void Room::render(SDL_Renderer* renderer) {
         SDL_RenderDrawPoint(renderer, px + 1, py - 1);
         SDL_RenderDrawPoint(renderer, px - 1, py + 1);
     }
+
+    // Afficher le texte d'instruction en haut de l'écran (en premier plan)
+    std::string instruction = "Rejoins l'autre cote";
+    int textSize = 2;
+    int charWidth = 8 * textSize;
+    int spacing = 2 * textSize;
+    int textWidth = instruction.length() * (charWidth + spacing);
+    int textX = (screenWidth - textWidth) / 2;
+    int textY = 15;
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 100, 255);  // Jaune clair
+    drawText(renderer, instruction, textX, textY, textSize);
 }
 
 void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int playerHealth, bool gameOver) {
