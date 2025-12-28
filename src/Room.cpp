@@ -436,8 +436,10 @@ void Room::render(SDL_Renderer* renderer) {
         SDL_RenderDrawPoint(renderer, px + 1, py - 1);
         SDL_RenderDrawPoint(renderer, px - 1, py + 1);
     }
+}
 
-    // Afficher le texte d'instruction en haut de l'écran (en premier plan)
+void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int playerHealth, bool gameOver) {
+    // Afficher le texte d'instruction en haut de l'écran (en premier plan, après le brouillard)
     std::string instruction = "Rejoins l'autre cote";
     int textSize = 2;
     int charWidth = 8 * textSize;
@@ -448,9 +450,8 @@ void Room::render(SDL_Renderer* renderer) {
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 100, 255);  // Jaune clair
     drawText(renderer, instruction, textX, textY, textSize);
-}
 
-void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int playerHealth, bool gameOver) {
+
     // Afficher les cœurs en haut à gauche
     // playerHealth est en quarts de cœur (12 = 3 cœurs pleins, 11 = 2 cœurs pleins + 3/4, etc.)
     int heartSize = 2;
