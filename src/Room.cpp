@@ -487,12 +487,113 @@ void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, in
         }
     }
 
-    // Afficher le score total + score du niveau actuel en bas à droite
+    // Afficher le score total + score du niveau actuel dans une fenêtre en surbrillance à gauche
     if (timerRunning || celebrating || gameOver) {
         int currentLevelScore = getScore();
         int displayScore = totalScore + currentLevelScore;
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Jaune pour le score
-        drawNumber(renderer, displayScore, screenWidth - 150, screenHeight - 50, 3);
+
+        // Position de la fenêtre de score
+        int boxX = 15;
+        int boxY = screenHeight - 80;
+        int boxWidth = 150;
+        int boxHeight = 60;
+
+        // Fond semi-transparent avec bordure dorée
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+        // Bordure extérieure dorée (effet de surbrillance)
+        SDL_SetRenderDrawColor(renderer, 255, 215, 0, 200); // Or
+        SDL_Rect outerBorder = {boxX - 3, boxY - 3, boxWidth + 6, boxHeight + 6};
+        SDL_RenderFillRect(renderer, &outerBorder);
+
+        // Bordure moyenne plus foncée
+        SDL_SetRenderDrawColor(renderer, 180, 140, 0, 220);
+        SDL_Rect midBorder = {boxX - 2, boxY - 2, boxWidth + 4, boxHeight + 4};
+        SDL_RenderFillRect(renderer, &midBorder);
+
+        // Fond de la fenêtre
+        SDL_SetRenderDrawColor(renderer, 20, 20, 40, 230); // Bleu très foncé
+        SDL_Rect box = {boxX, boxY, boxWidth, boxHeight};
+        SDL_RenderFillRect(renderer, &box);
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+        // Texte "SCORE" en petit
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        // Dessiner "SCORE" en pixels (5 lettres x 5 pixels de large + espaces)
+        int labelX = boxX + 10;
+        int labelY = boxY + 8;
+
+        // S
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = (py == 0 && px > 0) ||
+                               (px == 0 && py > 0 && py < 3) ||
+                               (py == 3 && px > 0 && px < 4) ||
+                               (px == 4 && py > 3 && py < 6) ||
+                               (py == 6 && px < 4);
+                if (drawPixel) {
+                    SDL_RenderDrawPoint(renderer, labelX + px, labelY + py);
+                }
+            }
+        }
+
+        // C
+        labelX += 7;
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = ((py == 0 || py == 6) && px > 0 && px < 5) ||
+                               (px == 0 && py > 0 && py < 6);
+                if (drawPixel) {
+                    SDL_RenderDrawPoint(renderer, labelX + px, labelY + py);
+                }
+            }
+        }
+
+        // O
+        labelX += 7;
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = ((py == 0 || py == 6) && px > 0 && px < 4) ||
+                               ((px == 0 || px == 4) && py > 0 && py < 6);
+                if (drawPixel) {
+                    SDL_RenderDrawPoint(renderer, labelX + px, labelY + py);
+                }
+            }
+        }
+
+        // R
+        labelX += 7;
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = (px == 0) ||
+                               (py == 0 && px < 4) ||
+                               (py == 3 && px < 4) ||
+                               (px == 4 && py > 0 && py < 3) ||
+                               (py > 3 && px == (py - 3));
+                if (drawPixel) {
+                    SDL_RenderDrawPoint(renderer, labelX + px, labelY + py);
+                }
+            }
+        }
+
+        // E
+        labelX += 7;
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = (px == 0) ||
+                               (py == 0 && px < 5) ||
+                               (py == 3 && px < 4) ||
+                               (py == 6 && px < 5);
+                if (drawPixel) {
+                    SDL_RenderDrawPoint(renderer, labelX + px, labelY + py);
+                }
+            }
+        }
+
+        // Afficher le score en grand et en jaune
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+        drawNumber(renderer, displayScore, boxX + 20, boxY + 28, 3);
     }
 
     // Écran de game over
