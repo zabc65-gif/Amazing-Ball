@@ -58,6 +58,14 @@ void Player::handleInput() {
         velocity.x = speed;
     }
 
+    // Normaliser la vélocité en diagonale pour garder la même vitesse
+    bool isDiagonal = (up || down) && (left || right);
+    if (isDiagonal) {
+        float diagonalFactor = 0.7071f; // 1/√2 ≈ 0.7071
+        velocity.x *= diagonalFactor;
+        velocity.y *= diagonalFactor;
+    }
+
     // Déterminer la direction (incluant diagonales)
     if (up && left) {
         direction = Direction::UP_LEFT;
