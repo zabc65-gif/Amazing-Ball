@@ -427,7 +427,7 @@ void Menu::render(SDL_Renderer* renderer) {
         // "QUITTER" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
         drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 3, 2, selectedOption == 3);
 
-        // Afficher les meilleurs scores par difficulté
+        // Afficher les meilleurs scores par difficulté (alignés à gauche)
         int scoreEasy = ScoreManager::getInstance().getHighScore(Difficulty::EASY);
         int scoreMedium = ScoreManager::getInstance().getHighScore(Difficulty::MEDIUM);
         int scoreHard = ScoreManager::getInstance().getHighScore(Difficulty::HARD);
@@ -435,27 +435,19 @@ void Menu::render(SDL_Renderer* renderer) {
         if (scoreEasy > 0 || scoreMedium > 0 || scoreHard > 0) {
             SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Couleur dorée
             std::string titleText = "MEILLEURS SCORES";
-            int titleWidth = 10 * 2 * titleText.length();
-            int titleX = (800 - titleWidth) / 2;
-            drawText(renderer, titleText, titleX, 180, 2, false);
+            drawText(renderer, titleText, 20, 180, 2, false);
 
             // Afficher les scores par difficulté (taille 1)
             SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Gris clair
 
             std::string easyText = "FACILE   " + std::to_string(scoreEasy);
-            int easyWidth = 10 * 1 * easyText.length();
-            int easyX = (800 - easyWidth) / 2;
-            drawText(renderer, easyText, easyX, 210, 1, false);
+            drawText(renderer, easyText, 20, 210, 1, false);
 
             std::string mediumText = "MOYEN   " + std::to_string(scoreMedium);
-            int mediumWidth = 10 * 1 * mediumText.length();
-            int mediumX = (800 - mediumWidth) / 2;
-            drawText(renderer, mediumText, mediumX, 225, 1, false);
+            drawText(renderer, mediumText, 20, 225, 1, false);
 
             std::string hardText = "DIFFICILE   " + std::to_string(scoreHard);
-            int hardWidth = 10 * 1 * hardText.length();
-            int hardX = (800 - hardWidth) / 2;
-            drawText(renderer, hardText, hardX, 240, 1, false);
+            drawText(renderer, hardText, 20, 240, 1, false);
         }
 
         // Instructions en bas
