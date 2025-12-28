@@ -111,11 +111,15 @@ void Player::handleEvent(SDL_Event& event) {
 void Player::update() {
     // Physique du saut
     if (!isGrounded) {
-        // Pendant le saut, le joueur continue son mouvement horizontal mais pas vertical
-        // Le mouvement vertical est géré uniquement par la physique du saut
+        // Pendant le saut, le joueur peut se déplacer horizontalement ET verticalement
+        // Appliquer le mouvement directionnel
         position.x += velocity.x;
+        position.y += velocity.y;
 
-        // Appliquer la gravité
+        // Mettre à jour groundLevel pour suivre les déplacements verticaux
+        groundLevel += velocity.y;
+
+        // Appliquer la gravité (physique du saut)
         verticalVelocity += gravity;
         position.y += verticalVelocity;
 
