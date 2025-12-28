@@ -389,26 +389,65 @@ void Menu::render(SDL_Renderer* renderer) {
     SDL_RenderClear(renderer);
 
     if (state == MenuState::MAIN_MENU) {
-        // Titre du jeu avec effet de pulsation
-        float pulse = 1.0f + 0.1f * std::sin(titlePulse);
-        int titleSize = static_cast<int>(4 * pulse);
+        // Titre du jeu avec taille fixe
+        int titleSize = 4;
 
         // Calculer la position centrée du titre
-        // "AMAZING BALL" = 12 chars, size ~4 -> largeur approximative = 10*4*12 = 480px
+        // "AMAZING BALL" = 12 chars, size 4 -> largeur approximative = 10*4*12 = 480px
         int titleWidth = 10 * titleSize * 12;
         int titleX = (800 - titleWidth) / 2;
+        int titleY = 70;
 
-        // Effet de halo autour du titre (centré aussi)
-        for (int i = 0; i < 3; i++) {
-            int alpha = 50 - i * 15;
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
-            int offset = (3 - i) * 3;
-            // Simuler un halo avec des rectangles
-            SDL_Rect haloRect = {titleX - offset, 80 - offset, titleWidth + offset * 2, 80 + offset * 2};
-            SDL_RenderDrawRect(renderer, &haloRect);
+        // Effet de halo coloré arc-en-ciel autour du titre
+        for (int i = 0; i < 5; i++) {
+            float haloPhase = titlePulse * 0.5f + i * 0.3f;
+            int r = static_cast<int>(128 + 127 * std::sin(haloPhase));
+            int g = static_cast<int>(128 + 127 * std::sin(haloPhase + 2.0f));
+            int b = static_cast<int>(128 + 127 * std::sin(haloPhase + 4.0f));
+            int alpha = 40 - i * 8;
+
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
+            int offset = (5 - i) * 4;
+            SDL_Rect haloRect = {titleX - offset, titleY - offset, titleWidth + offset * 2, 90 + offset * 2};
+            SDL_RenderFillRect(renderer, &haloRect);
+        }
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+        // Ombre portée du titre (décalée légèrement en bas à droite)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        drawText(renderer, "AMAZING BALL", titleX + 3, titleY + 3, titleSize, false);
+
+        // Titre principal avec dégradé arc-en-ciel animé
+        std::string title = "AMAZING BALL";
+        for (size_t i = 0; i < title.length(); i++) {
+            // Calculer la couleur pour chaque lettre (effet arc-en-ciel qui défile)
+            float colorPhase = titlePulse * 2.0f + i * 0.5f;
+            int r = static_cast<int>(128 + 127 * std::sin(colorPhase));
+            int g = static_cast<int>(128 + 127 * std::sin(colorPhase + 2.0f));
+            int b = static_cast<int>(128 + 127 * std::sin(colorPhase + 4.0f));
+
+            SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+
+            // Dessiner chaque lettre individuellement
+            std::string letter(1, title[i]);
+            int letterX = titleX + i * 10 * titleSize;
+            drawText(renderer, letter, letterX, titleY, titleSize, false);
         }
 
-        drawText(renderer, "AMAZING BALL", titleX, 80, titleSize, false);
+        // Effet de brillance qui traverse le titre périodiquement
+        float shinePos = std::fmod(titlePulse * 0.3f, 2.0f);
+        if (shinePos < 1.0f) {
+            int shineX = static_cast<int>(titleX + shinePos * titleWidth);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 100);
+            for (int i = -10; i <= 10; i++) {
+                int alpha = 100 - std::abs(i) * 10;
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
+                SDL_RenderDrawLine(renderer, shineX + i * 2, titleY - 10, shineX + i * 2, titleY + 100);
+            }
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        }
 
         // Options du menu (toutes centrées)
         int menuY = 250;
