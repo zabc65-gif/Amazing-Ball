@@ -127,10 +127,11 @@ void Player::update() {
             isJumping = false;
         }
     } else {
-        // Au sol, appliquer le mouvement normalement (horizontal ET vertical)
-        position += velocity;
-        // Mettre à jour groundLevel en continu quand on est au sol
+        // Au sol, mettre à jour groundLevel AVANT le mouvement
+        // pour capturer la position actuelle comme point d'atterrissage
         groundLevel = position.y;
+        // Puis appliquer le mouvement normalement (horizontal ET vertical)
+        position += velocity;
     }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
