@@ -591,9 +591,9 @@ void Room::renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, in
             }
         }
 
-        // Afficher le score en grand et en jaune
+        // Afficher le score en grand et en jaune (aligné à gauche dans la boîte)
         SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-        drawNumber(renderer, displayScore, boxX + 20, boxY + 28, 3);
+        drawNumber(renderer, displayScore, boxX + 10, boxY + 28, 3);
     }
 
     // Écran de game over
