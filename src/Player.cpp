@@ -101,11 +101,11 @@ void Player::handleEvent(SDL_Event& event) {
 }
 
 void Player::update() {
-    // Mise à jour de la position horizontale
-    position += velocity;
-
     // Physique du saut
     if (!isGrounded) {
+        // Pendant le saut, ne bouger que horizontalement
+        position.x += velocity.x;
+
         // Appliquer la gravité
         verticalVelocity += gravity;
         position.y += verticalVelocity;
@@ -117,6 +117,9 @@ void Player::update() {
             isGrounded = true;
             isJumping = false;
         }
+    } else {
+        // Au sol, appliquer le mouvement normalement
+        position += velocity;
     }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
