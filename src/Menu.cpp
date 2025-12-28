@@ -399,6 +399,7 @@ void Menu::render(SDL_Renderer* renderer) {
         int titleY = 70;
 
         // Effet de halo coloré arc-en-ciel autour du titre
+        int titleHeight = 7 * titleSize;  // Hauteur réelle du texte (7 pixels de hauteur par caractère)
         for (int i = 0; i < 5; i++) {
             float haloPhase = titlePulse * 0.5f + i * 0.3f;
             int r = static_cast<int>(128 + 127 * std::sin(haloPhase));
@@ -409,7 +410,7 @@ void Menu::render(SDL_Renderer* renderer) {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
             int offset = (5 - i) * 4;
-            SDL_Rect haloRect = {titleX - offset, titleY - offset, titleWidth + offset * 2, 90 + offset * 2};
+            SDL_Rect haloRect = {titleX - offset, titleY - offset, titleWidth + offset * 2, titleHeight + offset * 2};
             SDL_RenderFillRect(renderer, &haloRect);
         }
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
