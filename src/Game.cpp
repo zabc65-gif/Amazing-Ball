@@ -186,8 +186,8 @@ void Game::update() {
             hasStarted = true;
         }
 
-        // Vérifier si le joueur est tombé dans un trou
-        if (currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !gameOver) {
+        // Vérifier si le joueur est tombé dans un trou (seulement s'il est au sol)
+        if (player->getIsGrounded() && currentRoom->isPlayerInHole(playerPos, player->getRadius()) && !gameOver) {
             // Perdre une vie complète (4 quarts de cœur)
             playerHealth -= 4;
             if (playerHealth < 0) playerHealth = 0;
@@ -310,8 +310,8 @@ void Game::update() {
             invincibilityFrames--;
         }
 
-        // Détection de collision entre le joueur et les ennemis
-        if (invincibilityFrames == 0 && !gameOver) {
+        // Détection de collision entre le joueur et les ennemis (seulement si le joueur est au sol)
+        if (player->getIsGrounded() && invincibilityFrames == 0 && !gameOver) {
             for (const auto& enemy : enemies) {
                 if (enemy->isDead()) continue;
 

@@ -31,6 +31,7 @@ public:
     Direction getDirection() const { return direction; }
     int getAttackRange() const { return 45; }
     int getRadius() const { return radius; }
+    bool getIsGrounded() const { return isGrounded; }
 
 private:
     void drawCircle(SDL_Renderer* renderer, int centerX, int centerY, int radius);
