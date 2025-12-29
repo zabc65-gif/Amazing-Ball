@@ -92,6 +92,11 @@ void AudioManager::stopMusic() {
     Mix_HaltMusic();
 }
 
+void AudioManager::fadeOutMusic(int fadeTimeMs) {
+    // Fondu sortant sur la durée spécifiée (en millisecondes)
+    Mix_FadeOutMusic(fadeTimeMs);
+}
+
 void AudioManager::pauseMusic() {
     Mix_PauseMusic();
 }

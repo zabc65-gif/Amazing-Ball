@@ -31,6 +31,7 @@ public:
     bool loadMusic(MusicTrack track, const std::string& filepath);
     void playMusic(MusicTrack track, int loops = -1); // -1 = boucle infinie
     void stopMusic();
+    void fadeOutMusic(int fadeTimeMs = 1000); // Fondu sortant (défaut 1 seconde)
     void pauseMusic();
     void resumeMusic();
     void setMusicVolume(int volume); // 0-128

@@ -88,10 +88,14 @@ bool Game::init(const char* title, int width, int height) {
         std::cerr << "Erreur d'initialisation de l'AudioManager" << std::endl;
         // On continue même si l'audio ne fonctionne pas
     } else {
-        // Charger la musique de gameplay
+        // Charger les musiques
+        AudioManager::getInstance().loadMusic(MusicTrack::MENU, "assets/music/menu2.ogg");
         AudioManager::getInstance().loadMusic(MusicTrack::GAMEPLAY, "assets/music/gameplay.ogg");
         // Volume par défaut à 64 (sur 128)
         AudioManager::getInstance().setMusicVolume(64);
+
+        // Démarrer la musique de menu
+        AudioManager::getInstance().playMusic(MusicTrack::MENU, -1);
 
         // Charger les effets sonores
         AudioManager::getInstance().loadSound(SoundEffect::JUMP, "assets/sounds/jump.wav");
@@ -136,7 +140,9 @@ void Game::handleEvents() {
                 // Pas d'ennemis dans le mode salle
                 enemies.clear();
 
-                // Démarrer la musique de gameplay
+                // Fondu sortant de la musique du menu puis démarrer la musique de gameplay
+                AudioManager::getInstance().fadeOutMusic(500); // 500ms de fondu
+                SDL_Delay(500); // Attendre la fin du fondu
                 AudioManager::getInstance().playMusic(MusicTrack::GAMEPLAY, -1); // -1 = boucle infinie
             } else if (menu->shouldContinueGame()) {
                 gameStarted = true;
@@ -155,8 +161,10 @@ void Game::handleEvents() {
                     gameStarted = false;
                     menu->setState(MenuState::MAIN_MENU);
                     menu->resetToMainMenu();
-                    // Arrêter la musique
-                    AudioManager::getInstance().stopMusic();
+                    // Fondu sortant de la musique de gameplay puis relancer la musique du menu
+                    AudioManager::getInstance().fadeOutMusic(500); // 500ms de fondu
+                    SDL_Delay(500); // Attendre la fin du fondu
+                    AudioManager::getInstance().playMusic(MusicTrack::MENU, -1);
                 }
             }
         }
@@ -174,6 +182,18 @@ void Game::update() {
     player->update();
 
     Vector2D playerPos = player->getPosition();
+
+    // Bloquer le mouvement vers l'étoile électrique APRÈS tous les mouvements du joueur
+    if (inRoom && currentRoom) {
+        player->blockMovementTowards(currentRoom->getElectricStarPos(), currentRoom->getElectricStarRadius());
+
+        // En mode difficile, bloquer aussi le mouvement vers l'étoile satellite
+        if (currentRoom->getDifficulty() == Difficulty::HARD) {
+            player->blockMovementTowards(currentRoom->getSatelliteStarPos(), currentRoom->getElectricStarRadius());
+        }
+
+        playerPos = player->getPosition(); // Mettre à jour la position après le blocage
+    }
 
     if (inRoom && currentRoom) {
         // Mettre à jour la salle (timer, particules, animations)
@@ -310,6 +330,9 @@ void Game::update() {
             invincibilityFrames--;
         }
 
+        // Mettre à jour l'état d'invincibilité du joueur
+        player->setInvincible(invincibilityFrames > 0);
+
         // Détection de collision entre le joueur et les ennemis (seulement si le joueur est au sol)
         if (player->getIsGrounded() && invincibilityFrames == 0 && !gameOver) {
             for (const auto& enemy : enemies) {
@@ -345,6 +368,35 @@ void Game::update() {
 
                     // Ne vérifier qu'une collision par frame
                     break;
+                }
+            }
+
+            // Vérifier collision avec l'étoile électrique pour les dégâts
+            if (currentRoom->isPlayerTouchingElectricStar(playerPos, player->getRadius())) {
+                // Perdre 1/4 de cœur seulement si pas invincible
+                if (invincibilityFrames == 0) {
+                    // Appliquer le recul au premier contact
+                    player->applyKnockback(currentRoom->getElectricStarPos());
+
+                    playerHealth--;
+
+                    // Mettre à jour playerLives pour l'affichage
+                    playerLives = (playerHealth + 3) / 4;
+
+                    if (playerHealth <= 0) {
+                        playerHealth = 0;
+                        playerLives = 0;
+                        gameOver = true;
+                        if (currentRoom) {
+                            currentRoom->stopTimer();
+                        }
+                        // Sauvegarder le score si c'est un nouveau record
+                        int finalScore = totalScore + (currentRoom ? currentRoom->getScore() : 0);
+                        ScoreManager::getInstance().saveHighScore(finalScore, menu->getDifficulty());
+                    }
+
+                    // Activer l'invincibilité
+                    invincibilityFrames = invincibilityDuration;
                 }
             }
         }

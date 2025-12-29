@@ -20,7 +20,8 @@
       "Bash(./configure:*)",
       "Bash(make:*)",
       "Bash(sudo make install:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(git revert:*)"
     ]
   }
 }

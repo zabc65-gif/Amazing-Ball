@@ -32,6 +32,9 @@ public:
     int getAttackRange() const { return 45; }
     int getRadius() const { return radius; }
     bool getIsGrounded() const { return isGrounded; }
+    void applyKnockback(const Vector2D& sourcePos);
+    void blockMovementTowards(const Vector2D& obstaclePos, int obstacleRadius);
+    void setInvincible(bool invincible) { isInvincible = invincible; }
 
 private:
     void drawCircle(SDL_Renderer* renderer, int centerX, int centerY, int radius);
@@ -73,9 +76,20 @@ private:
     std::deque<Vector2D> positionHistory;
     static const int SATELLITE_DELAY_FRAMES = 15;  // 0.25 seconde à 60 FPS
 
+    // Position de l'ombre au sol (mémorisée au début du saut)
+    float shadowGroundY;
+
+    // Système de recul (knockback)
+    Vector2D knockbackVelocity;
+    int knockbackFrames;
+    const int knockbackDuration = 10;
+
     bool attacking;
     int attackTimer;
     const int attackDuration = 15;
+
+    // Invincibilité
+    bool isInvincible;
 };
 
 #endif

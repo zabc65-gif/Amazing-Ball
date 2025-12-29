@@ -29,6 +29,11 @@ public:
     void renderHUD(SDL_Renderer* renderer, int totalScore, float totalTime, int playerHealth, bool gameOver); // Afficher le score et le temps en premier plan
     bool isPlayerInHole(const Vector2D& playerPos, int playerRadius) const;
     bool hasReachedEnd(const Vector2D& playerPos) const;
+    bool isPlayerTouchingElectricStar(const Vector2D& playerPos, int playerRadius) const;
+    Vector2D getElectricStarPos() const { return electricStarPos; }
+    int getElectricStarRadius() const { return electricStarRadius; }
+    Vector2D getSatelliteStarPos() const { return satelliteStarPos; }
+    Difficulty getDifficulty() const { return difficulty; }
 
     void startTimer();
     void stopTimer();
@@ -57,7 +62,20 @@ private:
     // Animation des flèches
     float arrowAnimPhase;
 
+    // Étoile électrique au centre
+    Vector2D electricStarPos;
+    int electricStarRadius;
+    float electricAnimPhase;
+    std::vector<float> boltAngles;  // Angles des éclairs
+
+    // Étoile électrique satellite (mode difficile uniquement)
+    Vector2D satelliteStarPos;
+    float satelliteOrbitAngle;
+    float satelliteOrbitSpeed;
+    float satelliteOrbitRadius;
+
     void generateHoles();
+    void drawElectricStar(SDL_Renderer* renderer);
     void drawArrow(SDL_Renderer* renderer, int x, int y, int size);
     void drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size);
     void drawHeart(SDL_Renderer* renderer, int x, int y, int size, int quarters);

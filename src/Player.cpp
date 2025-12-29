@@ -24,8 +24,12 @@ Player::Player(float x, float y)
       satelliteLagX(0.0f),
       satelliteLagY(0.0f),
       previousPosition(x, y),
+      shadowGroundY(y + 13),  // Position initiale de l'ombre au sol
+      knockbackVelocity(0, 0),
+      knockbackFrames(0),
       attacking(false),
-      attackTimer(0) {
+      attackTimer(0),
+      isInvincible(false) {
     // Initialiser l'historique de positions avec la position de départ
     for (int i = 0; i < SATELLITE_DELAY_FRAMES; i++) {
         positionHistory.push_back(Vector2D(x, y));
@@ -109,6 +113,30 @@ void Player::handleEvent(SDL_Event& event) {
 }
 
 void Player::update() {
+    // Appliquer le recul (knockback) en priorité
+    if (knockbackFrames > 0) {
+        position += knockbackVelocity;
+
+        // Réduire progressivement la vélocité du recul
+        knockbackVelocity.x *= 0.85f;
+        knockbackVelocity.y *= 0.85f;
+
+        knockbackFrames--;
+
+        if (knockbackFrames == 0) {
+            knockbackVelocity.x = 0;
+            knockbackVelocity.y = 0;
+        }
+
+        // Pendant le knockback, sauter le reste de l'update
+        // mais appliquer quand même les limites d'écran
+        if (position.x < 40 + radius) position.x = 40 + radius;
+        if (position.x > 800 - 40 - radius) position.x = 800 - 40 - radius;
+        if (position.y < 40 + radius) position.y = 40 + radius;
+
+        return;
+    }
+
     // Physique du saut
     if (!isGrounded) {
         // Pendant le saut, le joueur peut se déplacer horizontalement ET verticalement
@@ -118,6 +146,8 @@ void Player::update() {
 
         // Mettre à jour groundLevel pour suivre les déplacements verticaux
         groundLevel += velocity.y;
+        // Mettre à jour aussi la position de l'ombre pour qu'elle suive
+        shadowGroundY = groundLevel + 13;
 
         // Appliquer la gravité (physique du saut)
         verticalVelocity += gravity;
@@ -136,6 +166,8 @@ void Player::update() {
         groundLevel = position.y;
         // Puis appliquer le mouvement normalement (horizontal ET vertical)
         position += velocity;
+        // Mettre à jour la position de l'ombre au sol
+        shadowGroundY = position.y + 13;
     }
 
     // Limites de l'écran (on suppose une fenêtre 800x600)
@@ -276,6 +308,9 @@ void Player::render(SDL_Renderer* renderer) {
     int centerX = static_cast<int>(position.x);
     int centerY = static_cast<int>(position.y);
 
+    // Facteur de transparence pour l'invincibilité (40% si invincible)
+    float alphaFactor = isInvincible ? 0.4f : 1.0f;
+
     // ===== SATELLITE =====
     // Utiliser la position retardée pour le satellite
     // Sécurité: utiliser la position actuelle si l'historique n'est pas encore complet
@@ -288,35 +323,29 @@ void Player::render(SDL_Renderer* renderer) {
 
     // Ombre du satellite pour donner l'impression de profondeur
     int shadowY = static_cast<int>(delayedPosition.y + satelliteOffsetY + satelliteLagY + 15);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 30);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, static_cast<Uint8>(30 * alphaFactor));
     drawFilledCircle(renderer, satX, shadowY, satelliteRadius - 1);
 
     // Halo orange du satellite (plus petit)
-    drawGradientCircle(renderer, satX, satY, satelliteRadius * 2, 255, 140, 0, 40);
+    drawGradientCircle(renderer, satX, satY, satelliteRadius * 2, 255, 140, 0, static_cast<int>(40 * alphaFactor));
 
     // Corps du satellite - orange foncé
-    SDL_SetRenderDrawColor(renderer, 200, 80, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 200, 80, 0, static_cast<Uint8>(255 * alphaFactor));
     drawFilledCircle(renderer, satX, satY, satelliteRadius);
 
     // Centre lumineux orange
-    SDL_SetRenderDrawColor(renderer, 255, 140, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 140, 0, static_cast<Uint8>(255 * alphaFactor));
     drawFilledCircle(renderer, satX, satY, satelliteRadius / 2);
 
     // Petite brillance blanche
-    SDL_SetRenderDrawColor(renderer, 255, 200, 100, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 200, 100, static_cast<Uint8>(255 * alphaFactor));
     drawFilledCircle(renderer, satX - 1, satY - 1, satelliteRadius / 3);
 
     // ===== JOUEUR =====
     // Ombre du joueur - dessinée en premier pour être derrière le halo
-    // Quand le joueur est au sol, l'ombre est sous lui
-    // Quand il saute, l'ombre reste au groundLevel
-    int playerShadowY;
-    if (isGrounded) {
-        playerShadowY = centerY + 25;  // Ombre sous le joueur quand il est au sol
-    } else {
-        playerShadowY = static_cast<int>(groundLevel);  // Ombre reste au sol pendant le saut
-    }
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 60);
+    // L'ombre utilise shadowGroundY qui reste fixe pendant le saut
+    int playerShadowY = static_cast<int>(shadowGroundY);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, static_cast<Uint8>(60 * alphaFactor));
     drawFilledCircle(renderer, centerX, playerShadowY, radius + 2);
 
     // Calculer la pulsation du halo (oscille entre 0.9 et 1.1)
@@ -325,28 +354,28 @@ void Player::render(SDL_Renderer* renderer) {
     // Dessiner les halos avec dégradé (du plus grand au plus petit)
     // Halo externe 1 - très subtil, s'estompe complètement aux bords
     int haloRadius1 = static_cast<int>(radius * 3.0f * haloPulse);
-    drawGradientCircle(renderer, centerX, centerY, haloRadius1, 255, 255, 255, 30);
+    drawGradientCircle(renderer, centerX, centerY, haloRadius1, 255, 255, 255, static_cast<int>(30 * alphaFactor));
 
     // Halo externe 2 - dégradé doux
     int haloRadius2 = static_cast<int>(radius * 2.2f * haloPulse);
-    drawGradientCircle(renderer, centerX, centerY, haloRadius2, 255, 255, 255, 50);
+    drawGradientCircle(renderer, centerX, centerY, haloRadius2, 255, 255, 255, static_cast<int>(50 * alphaFactor));
 
     // Halo interne - plus intense
     int haloRadius3 = static_cast<int>(radius * 1.5f);
-    drawGradientCircle(renderer, centerX, centerY, haloRadius3, 255, 255, 255, 100);
+    drawGradientCircle(renderer, centerX, centerY, haloRadius3, 255, 255, 255, static_cast<int>(100 * alphaFactor));
 
     // Bord lumineux de la boule
     int glowRadius = static_cast<int>(radius * 1.2f);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 180);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, static_cast<Uint8>(180 * alphaFactor));
     drawFilledCircle(renderer, centerX, centerY, glowRadius);
 
     // Coeur blanc brillant de la boule
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, static_cast<Uint8>(255 * alphaFactor));
     drawFilledCircle(renderer, centerX, centerY, radius);
 
     // Centre ultra-lumineux (petit cercle au centre)
     int coreRadius = static_cast<int>(radius * 0.5f);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, static_cast<Uint8>(255 * alphaFactor));
     drawFilledCircle(renderer, centerX, centerY, coreRadius);
 
     // Si le joueur attaque, dessiner un éclair d'énergie
@@ -357,7 +386,7 @@ void Player::render(SDL_Renderer* renderer) {
         int energyLength = 30;
         int energyWidth = 6;
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, static_cast<Uint8>(200 * attackIntensity));
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, static_cast<Uint8>(200 * attackIntensity * alphaFactor));
 
         switch (direction) {
             case Direction::UP:
@@ -440,6 +469,58 @@ void Player::render(SDL_Renderer* renderer) {
                     }
                 }
                 break;
+        }
+    }
+}
+
+void Player::applyKnockback(const Vector2D& sourcePos) {
+    // Calculer la direction du recul (opposée à la source)
+    Vector2D knockbackDir = position - sourcePos;
+    float length = std::sqrt(knockbackDir.x * knockbackDir.x + knockbackDir.y * knockbackDir.y);
+
+    if (length > 0) {
+        knockbackDir.x /= length;
+        knockbackDir.y /= length;
+    }
+
+    // Appliquer un recul (distance de 3 fois le rayon du joueur)
+    float knockbackDistance = radius * 3.0f;
+    knockbackVelocity = knockbackDir * (knockbackDistance / knockbackDuration);
+    knockbackFrames = knockbackDuration;
+}
+
+void Player::blockMovementTowards(const Vector2D& obstaclePos, int obstacleRadius) {
+    // Distance minimale = rayon du joueur + rayon de l'obstacle (collision au bord)
+    float minDistance = radius + obstacleRadius;
+
+    // Calculer la distance actuelle entre le joueur et l'obstacle
+    float dx = position.x - obstaclePos.x;
+    float dy = position.y - obstaclePos.y;
+    float currentDistance = std::sqrt(dx * dx + dy * dy);
+
+    // Si on est trop proche, repousser fermement le joueur (mur solide)
+    if (currentDistance < minDistance) {
+        // Normaliser la direction
+        if (currentDistance > 0.01f) {
+            dx /= currentDistance;
+            dy /= currentDistance;
+        } else {
+            // Si exactement au même point, repousser vers la droite
+            dx = 1.0f;
+            dy = 0.0f;
+        }
+
+        // Replacer le joueur exactement à la distance minimale
+        position.x = obstaclePos.x + dx * minDistance;
+        position.y = obstaclePos.y + dy * minDistance;
+
+        // Annuler toute vélocité qui pourrait pousser vers l'obstacle
+        // Calculer la projection de la vélocité sur la direction de l'obstacle
+        float dotProduct = velocity.x * (-dx) + velocity.y * (-dy);
+        if (dotProduct > 0) {
+            // La vélocité pousse vers l'obstacle, on l'annule
+            velocity.x += dx * dotProduct;
+            velocity.y += dy * dotProduct;
         }
     }
 }

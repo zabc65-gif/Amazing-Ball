@@ -16,7 +16,14 @@ Room::Room(int screenWidth, int screenHeight, int level, Difficulty difficulty)
       timerRunning(false),
       celebrating(false),
       celebrationTime(0.0f),
-      arrowAnimPhase(0.0f) {
+      arrowAnimPhase(0.0f),
+      electricStarPos(screenWidth / 2, screenHeight / 2),
+      electricStarRadius(15),
+      electricAnimPhase(0.0f),
+      satelliteStarPos(0, 0),
+      satelliteOrbitAngle(0.0f),
+      satelliteOrbitSpeed(0.02f),
+      satelliteOrbitRadius((screenWidth - 80) / 4.0f) {
 
     // Le rayon d'un trou est le double de la taille du joueur (rayon du joueur = 8)
     holeRadius = 16;
@@ -26,6 +33,11 @@ Room::Room(int screenWidth, int screenHeight, int level, Difficulty difficulty)
     if (!seeded) {
         srand(static_cast<unsigned int>(time(nullptr)));
         seeded = true;
+    }
+
+    // Initialiser les angles des éclairs de l'étoile électrique (8 éclairs)
+    for (int i = 0; i < 8; i++) {
+        boltAngles.push_back((i * 45.0f) * M_PI / 180.0f);
     }
 
     generateHoles();
@@ -116,6 +128,24 @@ void Room::update(float deltaTime) {
     arrowAnimPhase += deltaTime * 3.0f;
     if (arrowAnimPhase > 2 * M_PI) {
         arrowAnimPhase -= 2 * M_PI;
+    }
+
+    // Mettre à jour l'animation de l'étoile électrique
+    electricAnimPhase += deltaTime * 8.0f;  // Animation rapide
+    if (electricAnimPhase > 2 * M_PI) {
+        electricAnimPhase -= 2 * M_PI;
+    }
+
+    // Mettre à jour l'étoile satellite (mode difficile uniquement)
+    if (difficulty == Difficulty::HARD) {
+        satelliteOrbitAngle += satelliteOrbitSpeed;
+        if (satelliteOrbitAngle > 2 * M_PI) {
+            satelliteOrbitAngle -= 2 * M_PI;
+        }
+
+        // Calculer la position de l'étoile satellite
+        satelliteStarPos.x = electricStarPos.x + satelliteOrbitRadius * std::cos(satelliteOrbitAngle);
+        satelliteStarPos.y = electricStarPos.y + satelliteOrbitRadius * std::sin(satelliteOrbitAngle);
     }
 
     // Mettre à jour la célébration
@@ -410,6 +440,24 @@ void Room::render(SDL_Renderer* renderer) {
                 }
             }
         }
+    }
+
+    // Dessiner l'étoile électrique centrale
+    drawElectricStar(renderer);
+
+    // Dessiner l'étoile électrique satellite (mode difficile uniquement)
+    if (difficulty == Difficulty::HARD) {
+        // Sauvegarder la position actuelle de l'étoile centrale
+        Vector2D tempPos = electricStarPos;
+
+        // Remplacer temporairement par la position satellite
+        electricStarPos = satelliteStarPos;
+
+        // Dessiner l'étoile satellite
+        drawElectricStar(renderer);
+
+        // Restaurer la position centrale
+        electricStarPos = tempPos;
     }
 
     // Dessiner les particules de célébration
@@ -766,4 +814,110 @@ bool Room::isPlayerInHole(const Vector2D& playerPos, int playerRadius) const {
 bool Room::hasReachedEnd(const Vector2D& playerPos) const {
     // Le joueur a atteint la fin s'il est dans la zone de droite
     return playerPos.x >= endZoneX;
+}
+
+bool Room::isPlayerTouchingElectricStar(const Vector2D& playerPos, int playerRadius) const {
+    // Vérifier la collision avec l'étoile électrique centrale
+    float dx = playerPos.x - electricStarPos.x;
+    float dy = playerPos.y - electricStarPos.y;
+    float distance = std::sqrt(dx * dx + dy * dy);
+
+    if (distance < (playerRadius + electricStarRadius)) {
+        return true;
+    }
+
+    // En mode difficile, vérifier aussi la collision avec l'étoile satellite
+    if (difficulty == Difficulty::HARD) {
+        float dxSat = playerPos.x - satelliteStarPos.x;
+        float dySat = playerPos.y - satelliteStarPos.y;
+        float distanceSat = std::sqrt(dxSat * dxSat + dySat * dySat);
+
+        if (distanceSat < (playerRadius + electricStarRadius)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Room::drawElectricStar(SDL_Renderer* renderer) {
+    int centerX = static_cast<int>(electricStarPos.x);
+    int centerY = static_cast<int>(electricStarPos.y);
+
+    // Couleur électrique jaune
+    float pulse = 0.7f + 0.3f * std::sin(electricAnimPhase);
+
+    // Dessiner le noyau central (cercle lumineux)
+    for (int r = 0; r < electricStarRadius; r++) {
+        int alpha = static_cast<int>(200 * pulse * (1.0f - static_cast<float>(r) / electricStarRadius));
+        SDL_SetRenderDrawColor(renderer, 255, 220, 50, alpha);
+
+        for (int w = 0; w < r * 2; w++) {
+            for (int h = 0; h < r * 2; h++) {
+                int dx = r - w;
+                int dy = r - h;
+                if ((dx*dx + dy*dy) <= (r * r)) {
+                    SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+                }
+            }
+        }
+    }
+
+    // Dessiner les éclairs (8 branches)
+    for (size_t i = 0; i < boltAngles.size(); i++) {
+        float angle = boltAngles[i] + electricAnimPhase * 0.5f;  // Rotation lente
+        float boltLength = electricStarRadius * 2.5f + std::sin(electricAnimPhase * 2.0f + i) * 5.0f;
+
+        // Éclair principal
+        for (float len = electricStarRadius; len < boltLength; len += 1.0f) {
+            int x = centerX + static_cast<int>(std::cos(angle) * len);
+            int y = centerY + static_cast<int>(std::sin(angle) * len);
+
+            // Ajouter du zigzag à l'éclair
+            float zigzag = std::sin(len * 0.5f + electricAnimPhase * 3.0f) * 2.0f;
+            x += static_cast<int>(std::cos(angle + M_PI / 2) * zigzag);
+            y += static_cast<int>(std::sin(angle + M_PI / 2) * zigzag);
+
+            // Dégradé de transparence
+            float alpha = 255 * (1.0f - (len - electricStarRadius) / (boltLength - electricStarRadius)) * pulse;
+            SDL_SetRenderDrawColor(renderer, 255, 240, 100, static_cast<Uint8>(alpha));
+
+            // Épaisseur de l'éclair
+            for (int thick = -1; thick <= 1; thick++) {
+                SDL_RenderDrawPoint(renderer,
+                    x + static_cast<int>(std::cos(angle + M_PI / 2) * thick),
+                    y + static_cast<int>(std::sin(angle + M_PI / 2) * thick));
+            }
+        }
+
+        // Petites branches secondaires
+        if (i % 2 == 0) {
+            float branchAngle = angle + M_PI / 4;
+            float branchLength = boltLength * 0.4f;
+
+            for (float len = boltLength * 0.6f; len < branchLength + boltLength * 0.6f; len += 1.0f) {
+                int x = centerX + static_cast<int>(std::cos(angle) * (boltLength * 0.6f) + std::cos(branchAngle) * (len - boltLength * 0.6f));
+                int y = centerY + static_cast<int>(std::sin(angle) * (boltLength * 0.6f) + std::sin(branchAngle) * (len - boltLength * 0.6f));
+
+                float alpha = 150 * pulse;
+                SDL_SetRenderDrawColor(renderer, 255, 230, 80, static_cast<Uint8>(alpha));
+                SDL_RenderDrawPoint(renderer, x, y);
+            }
+        }
+    }
+
+    // Aura externe pulsante
+    int auraRadius = electricStarRadius * 3;
+    for (int r = electricStarRadius * 2; r < auraRadius; r++) {
+        float alpha = 30 * pulse * (1.0f - static_cast<float>(r - electricStarRadius * 2) / static_cast<float>(auraRadius - electricStarRadius * 2));
+        SDL_SetRenderDrawColor(renderer, 255, 220, 50, static_cast<Uint8>(alpha));
+
+        // Dessiner quelques points pour l'aura (pas un cercle complet pour performance)
+        for (int angle = 0; angle < 360; angle += 10) {
+            float rad = angle * M_PI / 180.0f;
+            int x = centerX + static_cast<int>(std::cos(rad) * r);
+            int y = centerY + static_cast<int>(std::sin(rad) * r);
+            SDL_RenderDrawPoint(renderer, x, y);
+        }
+    }
 }
