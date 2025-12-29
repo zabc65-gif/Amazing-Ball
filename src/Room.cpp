@@ -406,38 +406,38 @@ void Room::render(SDL_Renderer* renderer) {
         }
     }
 
-    // Dessiner les trous (noir avec bordure rouge)
+    // Dessiner les trous (noir avec bordure rouge) - Optimisé avec lignes horizontales
     for (const auto& hole : holes) {
-        // Dessiner le trou (cercle noir)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        int centerX = static_cast<int>(hole.position.x);
+        int centerY = static_cast<int>(hole.position.y);
 
-        // Dessiner un cercle rempli pour le trou
-        for (int w = 0; w < hole.radius * 2; w++) {
-            for (int h = 0; h < hole.radius * 2; h++) {
-                int dx = hole.radius - w;
-                int dy = hole.radius - h;
-                if ((dx*dx + dy*dy) <= (hole.radius * hole.radius)) {
-                    SDL_RenderDrawPoint(renderer,
-                                      static_cast<int>(hole.position.x) + dx,
-                                      static_cast<int>(hole.position.y) + dy);
-                }
-            }
+        // Dessiner le cercle noir du trou avec des lignes horizontales (beaucoup plus rapide)
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        int radiusSq = hole.radius * hole.radius;
+        for (int y = -hole.radius; y <= hole.radius; y++) {
+            int halfWidth = static_cast<int>(std::sqrt(radiusSq - y * y));
+            SDL_RenderDrawLine(renderer,
+                             centerX - halfWidth, centerY + y,
+                             centerX + halfWidth, centerY + y);
         }
 
-        // Bordure rouge autour du trou
+        // Bordure rouge avec lignes horizontales
         SDL_SetRenderDrawColor(renderer, 200, 0, 0, 255);
         int outerRadius = hole.radius + 2;
-        for (int w = 0; w < outerRadius * 2; w++) {
-            for (int h = 0; h < outerRadius * 2; h++) {
-                int dx = outerRadius - w;
-                int dy = outerRadius - h;
-                int distSq = dx*dx + dy*dy;
-                if (distSq <= (outerRadius * outerRadius) &&
-                    distSq >= (hole.radius * hole.radius)) {
-                    SDL_RenderDrawPoint(renderer,
-                                      static_cast<int>(hole.position.x) + dx,
-                                      static_cast<int>(hole.position.y) + dy);
-                }
+        int outerRadiusSq = outerRadius * outerRadius;
+        for (int y = -outerRadius; y <= outerRadius; y++) {
+            int outerHalfWidth = static_cast<int>(std::sqrt(outerRadiusSq - y * y));
+            int innerHalfWidth = (y >= -hole.radius && y <= hole.radius) ?
+                               static_cast<int>(std::sqrt(radiusSq - y * y)) : 0;
+
+            // Dessiner les deux segments de bordure (gauche et droite)
+            if (outerHalfWidth > innerHalfWidth) {
+                SDL_RenderDrawLine(renderer,
+                                 centerX - outerHalfWidth, centerY + y,
+                                 centerX - innerHalfWidth, centerY + y);
+                SDL_RenderDrawLine(renderer,
+                                 centerX + innerHalfWidth, centerY + y,
+                                 centerX + outerHalfWidth, centerY + y);
             }
         }
     }
@@ -798,13 +798,17 @@ void Room::drawText(SDL_Renderer* renderer, const std::string& text, int x, int 
 }
 
 bool Room::isPlayerInHole(const Vector2D& playerPos, int playerRadius) const {
+    // Optimisé : comparer les carrés des distances pour éviter sqrt()
+    float playerRadiusOffset = playerRadius / 2.0f;
+
     for (const auto& hole : holes) {
         float dx = playerPos.x - hole.position.x;
         float dy = playerPos.y - hole.position.y;
-        float distance = std::sqrt(dx * dx + dy * dy);
+        float distanceSq = dx * dx + dy * dy;
+        float maxDistSq = (hole.radius - playerRadiusOffset) * (hole.radius - playerRadiusOffset);
 
-        // Si le centre du joueur est dans le trou
-        if (distance <= hole.radius - playerRadius / 2) {
+        // Si le centre du joueur est dans le trou (comparaison sans sqrt)
+        if (distanceSq <= maxDistSq) {
             return true;
         }
     }
@@ -817,12 +821,15 @@ bool Room::hasReachedEnd(const Vector2D& playerPos) const {
 }
 
 bool Room::isPlayerTouchingElectricStar(const Vector2D& playerPos, int playerRadius) const {
+    // Optimisé : comparer les carrés des distances pour éviter sqrt()
+    float collisionDistSq = (playerRadius + electricStarRadius) * (playerRadius + electricStarRadius);
+
     // Vérifier la collision avec l'étoile électrique centrale
     float dx = playerPos.x - electricStarPos.x;
     float dy = playerPos.y - electricStarPos.y;
-    float distance = std::sqrt(dx * dx + dy * dy);
+    float distanceSq = dx * dx + dy * dy;
 
-    if (distance < (playerRadius + electricStarRadius)) {
+    if (distanceSq < collisionDistSq) {
         return true;
     }
 
@@ -830,9 +837,9 @@ bool Room::isPlayerTouchingElectricStar(const Vector2D& playerPos, int playerRad
     if (difficulty == Difficulty::HARD) {
         float dxSat = playerPos.x - satelliteStarPos.x;
         float dySat = playerPos.y - satelliteStarPos.y;
-        float distanceSat = std::sqrt(dxSat * dxSat + dySat * dySat);
+        float distanceSatSq = dxSat * dxSat + dySat * dySat;
 
-        if (distanceSat < (playerRadius + electricStarRadius)) {
+        if (distanceSatSq < collisionDistSq) {
             return true;
         }
     }
@@ -847,73 +854,67 @@ void Room::drawElectricStar(SDL_Renderer* renderer) {
     // Couleur électrique jaune
     float pulse = 0.7f + 0.3f * std::sin(electricAnimPhase);
 
-    // Dessiner le noyau central (cercle lumineux)
-    for (int r = 0; r < electricStarRadius; r++) {
-        int alpha = static_cast<int>(200 * pulse * (1.0f - static_cast<float>(r) / electricStarRadius));
+    // Dessiner le noyau central (cercle lumineux) - Optimisé avec lignes horizontales
+    int radiusSq = electricStarRadius * electricStarRadius;
+    for (int y = -electricStarRadius; y <= electricStarRadius; y++) {
+        int halfWidth = static_cast<int>(std::sqrt(radiusSq - y * y));
+        int alpha = static_cast<int>(200 * pulse * (1.0f - std::sqrt(y * y + halfWidth * halfWidth * 0.5f) / electricStarRadius));
         SDL_SetRenderDrawColor(renderer, 255, 220, 50, alpha);
-
-        for (int w = 0; w < r * 2; w++) {
-            for (int h = 0; h < r * 2; h++) {
-                int dx = r - w;
-                int dy = r - h;
-                if ((dx*dx + dy*dy) <= (r * r)) {
-                    SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
-                }
-            }
-        }
+        SDL_RenderDrawLine(renderer,
+                         centerX - halfWidth, centerY + y,
+                         centerX + halfWidth, centerY + y);
     }
 
-    // Dessiner les éclairs (8 branches)
+    // Dessiner les éclairs (8 branches) - Optimisé avec moins d'itérations
     for (size_t i = 0; i < boltAngles.size(); i++) {
-        float angle = boltAngles[i] + electricAnimPhase * 0.5f;  // Rotation lente
+        float angle = boltAngles[i] + electricAnimPhase * 0.5f;
         float boltLength = electricStarRadius * 2.5f + std::sin(electricAnimPhase * 2.0f + i) * 5.0f;
 
-        // Éclair principal
-        for (float len = electricStarRadius; len < boltLength; len += 1.0f) {
+        // Éclair principal - simplifié avec moins d'itérations
+        int prevX = centerX + static_cast<int>(std::cos(angle) * electricStarRadius);
+        int prevY = centerY + static_cast<int>(std::sin(angle) * electricStarRadius);
+
+        for (float len = electricStarRadius; len < boltLength; len += 2.0f) {  // Pas de 2 au lieu de 1
             int x = centerX + static_cast<int>(std::cos(angle) * len);
             int y = centerY + static_cast<int>(std::sin(angle) * len);
 
-            // Ajouter du zigzag à l'éclair
+            // Zigzag simplifié
             float zigzag = std::sin(len * 0.5f + electricAnimPhase * 3.0f) * 2.0f;
             x += static_cast<int>(std::cos(angle + M_PI / 2) * zigzag);
             y += static_cast<int>(std::sin(angle + M_PI / 2) * zigzag);
 
-            // Dégradé de transparence
             float alpha = 255 * (1.0f - (len - electricStarRadius) / (boltLength - electricStarRadius)) * pulse;
             SDL_SetRenderDrawColor(renderer, 255, 240, 100, static_cast<Uint8>(alpha));
 
-            // Épaisseur de l'éclair
-            for (int thick = -1; thick <= 1; thick++) {
-                SDL_RenderDrawPoint(renderer,
-                    x + static_cast<int>(std::cos(angle + M_PI / 2) * thick),
-                    y + static_cast<int>(std::sin(angle + M_PI / 2) * thick));
-            }
+            // Dessiner une ligne au lieu de 3 points
+            SDL_RenderDrawLine(renderer, prevX, prevY, x, y);
+            prevX = x;
+            prevY = y;
         }
 
-        // Petites branches secondaires
+        // Branches secondaires - réduites (seulement 4 au lieu de 8)
         if (i % 2 == 0) {
             float branchAngle = angle + M_PI / 4;
+            float branchStart = boltLength * 0.6f;
             float branchLength = boltLength * 0.4f;
 
-            for (float len = boltLength * 0.6f; len < branchLength + boltLength * 0.6f; len += 1.0f) {
-                int x = centerX + static_cast<int>(std::cos(angle) * (boltLength * 0.6f) + std::cos(branchAngle) * (len - boltLength * 0.6f));
-                int y = centerY + static_cast<int>(std::sin(angle) * (boltLength * 0.6f) + std::sin(branchAngle) * (len - boltLength * 0.6f));
+            int startX = centerX + static_cast<int>(std::cos(angle) * branchStart);
+            int startY = centerY + static_cast<int>(std::sin(angle) * branchStart);
+            int endX = startX + static_cast<int>(std::cos(branchAngle) * branchLength);
+            int endY = startY + static_cast<int>(std::sin(branchAngle) * branchLength);
 
-                float alpha = 150 * pulse;
-                SDL_SetRenderDrawColor(renderer, 255, 230, 80, static_cast<Uint8>(alpha));
-                SDL_RenderDrawPoint(renderer, x, y);
-            }
+            SDL_SetRenderDrawColor(renderer, 255, 230, 80, static_cast<Uint8>(150 * pulse));
+            SDL_RenderDrawLine(renderer, startX, startY, endX, endY);
         }
     }
 
-    // Aura externe pulsante
-    int auraRadius = electricStarRadius * 3;
-    for (int r = electricStarRadius * 2; r < auraRadius; r++) {
-        float alpha = 30 * pulse * (1.0f - static_cast<float>(r - electricStarRadius * 2) / static_cast<float>(auraRadius - electricStarRadius * 2));
+    // Aura externe - drastiquement simplifiée, seulement 3 cercles au lieu de plusieurs
+    for (int r = electricStarRadius * 2; r < electricStarRadius * 3; r += electricStarRadius / 3) {
+        float alpha = 30 * pulse * (1.0f - static_cast<float>(r - electricStarRadius * 2) / static_cast<float>(electricStarRadius));
         SDL_SetRenderDrawColor(renderer, 255, 220, 50, static_cast<Uint8>(alpha));
 
-        // Dessiner quelques points pour l'aura (pas un cercle complet pour performance)
-        for (int angle = 0; angle < 360; angle += 10) {
+        // Dessiner seulement 12 points (tous les 30°) au lieu de 36 (tous les 10°)
+        for (int angle = 0; angle < 360; angle += 30) {
             float rad = angle * M_PI / 180.0f;
             int x = centerX + static_cast<int>(std::cos(rad) * r);
             int y = centerY + static_cast<int>(std::sin(rad) * r);

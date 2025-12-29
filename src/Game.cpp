@@ -482,8 +482,8 @@ void Game::drawPlayerLight(int playerX, int playerY) {
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    // Optimisation: dessiner le gradient avec des cercles au lieu de pixels
-    int numCircles = 50;  // Nombre de cercles concentriques
+    // Optimisation: réduire le nombre de cercles de 50 à 25 pour de meilleures performances
+    int numCircles = 25;  // Nombre de cercles concentriques (réduit de 50)
 
     for (int i = numCircles; i >= 0; i--) {
         float t = static_cast<float>(i) / numCircles;
@@ -498,7 +498,8 @@ void Game::drawPlayerLight(int playerX, int playerY) {
         int y1 = playerY - currentRadius;
         int y2 = playerY + currentRadius;
 
-        for (int y = y1; y <= y2; y++) {
+        // Optimisation: incrémenter de 2 au lieu de 1 pour diviser par 2 le nombre de lignes
+        for (int y = y1; y <= y2; y += 2) {
             int dy = y - playerY;
             int halfWidth = static_cast<int>(std::sqrt(currentRadius * currentRadius - dy * dy));
 
@@ -518,7 +519,7 @@ void Game::drawPlayerLight(int playerX, int playerY) {
         int enemyY = static_cast<int>(enemyPos.y);
         int enemyLightRadius = enemy->getLightRadius();
 
-        int numCircles = 25;  // Moins de cercles pour une aura plus petite
+        int numCircles = 15;  // Réduit de 25 à 15 pour de meilleures performances
         for (int i = numCircles; i >= 0; i--) {
             float t = static_cast<float>(i) / numCircles;
             int currentRadius = static_cast<int>(enemyLightRadius * t);
@@ -531,6 +532,7 @@ void Game::drawPlayerLight(int playerX, int playerY) {
             int y1 = enemyY - currentRadius;
             int y2 = enemyY + currentRadius;
 
+            // Rendu lisse : incrément de 1 pour éviter les lignes visibles (bon compromis performance/qualité)
             for (int y = y1; y <= y2; y++) {
                 int dy = y - enemyY;
                 int halfWidth = static_cast<int>(std::sqrt(currentRadius * currentRadius - dy * dy));
