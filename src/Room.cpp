@@ -171,6 +171,26 @@ void Room::update(float deltaTime) {
 void Room::drawArrow(SDL_Renderer* renderer, int x, int y, int size) {
     // Dessiner une flèche pointant vers la droite avec une pointe bien visible
 
+    // Ombre de la flèche (décalée uniquement vers le bas, même position horizontale)
+    int shadowOffsetX = 0;
+    int shadowOffsetY = 12;
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 100); // Noir semi-transparent
+
+    // Ombre du corps
+    SDL_Rect shadowBody = {x - size/2 + shadowOffsetX, y - size/6 + shadowOffsetY, size, size/3};
+    SDL_RenderFillRect(renderer, &shadowBody);
+
+    // Ombre de la pointe
+    for (int i = 0; i < size/2; i++) {
+        int height = size - i * 2;
+        for (int j = 0; j < height; j++) {
+            SDL_RenderDrawPoint(renderer, x + size/2 + i + shadowOffsetX, y - height/2 + j + shadowOffsetY);
+        }
+    }
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
     // Corps de la flèche (rectangle)
     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Jaune vif
     SDL_Rect arrowBody = {x - size/2, y - size/6, size, size/3};
@@ -243,6 +263,13 @@ void Room::drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size
     int digitSpacing = size * 2;
 
     for (char digit : numStr) {
+        // Vérifier que c'est bien un chiffre
+        if (digit < '0' || digit > '9') {
+            // Si ce n'est pas un chiffre, sauter mais ne rien dessiner
+            currentX += digitWidth + digitSpacing;
+            continue;
+        }
+
         int d = digit - '0';
 
         // Dessiner chaque chiffre pixel par pixel

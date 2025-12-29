@@ -8,6 +8,8 @@
 #include "ScoreManager.hpp"
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
+#include <algorithm>
 
 Game::Game() : window(nullptr), renderer(nullptr), isRunning(false), lightTexture(nullptr), lightRadius(150), gameStarted(false), inRoom(false), currentLevel(1), windowWidth(800), windowHeight(600), totalScore(0), totalTime(0.0f), playerLives(3), playerHealth(12), invincibilityFrames(0), gameOver(false) {}
 
@@ -333,18 +335,18 @@ void Game::update() {
         // Mettre à jour l'état d'invincibilité du joueur
         player->setInvincible(invincibilityFrames > 0);
 
-        // Détection de collision entre le joueur et les ennemis (seulement si le joueur est au sol)
-        if (player->getIsGrounded() && invincibilityFrames == 0 && !gameOver) {
-            for (const auto& enemy : enemies) {
-                if (enemy->isDead()) continue;
+        // Détection de collision entre le joueur et les ennemis
+        for (const auto& enemy : enemies) {
+            if (enemy->isDead()) continue;
 
-                Vector2D enemyPos = enemy->getPosition();
-                float dx = enemyPos.x - playerPos.x;
-                float dy = enemyPos.y - playerPos.y;
-                float distance = std::sqrt(dx * dx + dy * dy);
+            Vector2D enemyPos = enemy->getPosition();
+            float dx = enemyPos.x - playerPos.x;
+            float dy = enemyPos.y - playerPos.y;
+            float distance = std::sqrt(dx * dx + dy * dy);
 
-                // Collision si la distance entre centres < somme des rayons
-                if (distance < (player->getRadius() + enemy->getRadius())) {
+            // Collision si la distance entre centres < somme des rayons
+            if (distance < (player->getRadius() + enemy->getRadius())) {
+                if (invincibilityFrames == 0 && !gameOver) {
                     // Perdre 1/4 de cœur
                     playerHealth--;
 
@@ -363,6 +365,9 @@ void Game::update() {
                         ScoreManager::getInstance().saveHighScore(finalScore, menu->getDifficulty());
                     }
 
+                    // Appliquer un knockback (repousser le joueur)
+                    player->applyKnockback(enemyPos);
+
                     // Activer l'invincibilité
                     invincibilityFrames = invincibilityDuration;
 
@@ -370,34 +375,34 @@ void Game::update() {
                     break;
                 }
             }
+        }
 
-            // Vérifier collision avec l'étoile électrique pour les dégâts
-            if (currentRoom->isPlayerTouchingElectricStar(playerPos, player->getRadius())) {
-                // Perdre 1/4 de cœur seulement si pas invincible
-                if (invincibilityFrames == 0) {
-                    // Appliquer le recul au premier contact
-                    player->applyKnockback(currentRoom->getElectricStarPos());
+        // Vérifier collision avec l'étoile électrique pour les dégâts
+        if (currentRoom->isPlayerTouchingElectricStar(playerPos, player->getRadius())) {
+            // Perdre 1/4 de cœur seulement si pas invincible
+            if (invincibilityFrames == 0) {
+                // Appliquer le recul au premier contact
+                player->applyKnockback(currentRoom->getElectricStarPos());
 
-                    playerHealth--;
+                playerHealth--;
 
-                    // Mettre à jour playerLives pour l'affichage
-                    playerLives = (playerHealth + 3) / 4;
+                // Mettre à jour playerLives pour l'affichage
+                playerLives = (playerHealth + 3) / 4;
 
-                    if (playerHealth <= 0) {
-                        playerHealth = 0;
-                        playerLives = 0;
-                        gameOver = true;
-                        if (currentRoom) {
-                            currentRoom->stopTimer();
-                        }
-                        // Sauvegarder le score si c'est un nouveau record
-                        int finalScore = totalScore + (currentRoom ? currentRoom->getScore() : 0);
-                        ScoreManager::getInstance().saveHighScore(finalScore, menu->getDifficulty());
+                if (playerHealth <= 0) {
+                    playerHealth = 0;
+                    playerLives = 0;
+                    gameOver = true;
+                    if (currentRoom) {
+                        currentRoom->stopTimer();
                     }
-
-                    // Activer l'invincibilité
-                    invincibilityFrames = invincibilityDuration;
+                    // Sauvegarder le score si c'est un nouveau record
+                    int finalScore = totalScore + (currentRoom ? currentRoom->getScore() : 0);
+                    ScoreManager::getInstance().saveHighScore(finalScore, menu->getDifficulty());
                 }
+
+                // Activer l'invincibilité
+                invincibilityFrames = invincibilityDuration;
             }
         }
     } else {

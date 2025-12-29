@@ -15,7 +15,7 @@ Enemy::Enemy(float x, float y)
       maxHealth(2),
       lightRadius(80),
       detectionRadius(200.0f),
-      attackRadius(30.0f),
+      attackRadius(5.0f),  // Réduit de 30 à 5 pour s'approcher très près
       attackCooldown(0),
       attackCooldownMax(60),
       animationPhase(0.0f),

@@ -20,6 +20,7 @@ enum class MenuState {
     MAIN_MENU,
     DIFFICULTY_SELECTION,
     CREDITS_SCREEN,
+    HIGHSCORES_SCREEN,
     PLAYING
 };
 
@@ -72,6 +73,8 @@ private:
                   int size, bool selected = false);
     void drawFilledRect(SDL_Renderer* renderer, int x, int y, int w, int h);
     void drawBorder(SDL_Renderer* renderer, int x, int y, int w, int h);
+    void drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size);
+    void renderHighScoresScreen(SDL_Renderer* renderer);
 };
 
 #endif

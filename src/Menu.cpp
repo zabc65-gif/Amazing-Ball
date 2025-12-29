@@ -34,6 +34,11 @@ void Menu::handleInput(SDL_Event& event) {
                     }
                     break;
 
+                case SDLK_RIGHT:
+                    // Aller à l'écran des meilleurs scores
+                    state = MenuState::HIGHSCORES_SCREEN;
+                    break;
+
                 case SDLK_RETURN:
                 case SDLK_SPACE:
                     switch (selectedOption) {
@@ -101,6 +106,14 @@ void Menu::handleInput(SDL_Event& event) {
             if (event.key.keysym.sym == SDLK_ESCAPE ||
                 event.key.keysym.sym == SDLK_RETURN ||
                 event.key.keysym.sym == SDLK_SPACE) {
+                state = MenuState::MAIN_MENU;
+            }
+        } else if (state == MenuState::HIGHSCORES_SCREEN) {
+            // Retour au menu avec n'importe quelle touche
+            if (event.key.keysym.sym == SDLK_ESCAPE ||
+                event.key.keysym.sym == SDLK_RETURN ||
+                event.key.keysym.sym == SDLK_SPACE ||
+                event.key.keysym.sym == SDLK_LEFT) {
                 state = MenuState::MAIN_MENU;
             }
         }
@@ -383,6 +396,151 @@ void Menu::drawText(SDL_Renderer* renderer, const std::string& text, int x, int 
     }
 }
 
+void Menu::drawNumber(SDL_Renderer* renderer, int number, int x, int y, int size) {
+    // Convertir le nombre en string
+    std::string numStr = std::to_string(number);
+
+    int currentX = x;
+    int digitWidth = size * 6;
+    int digitSpacing = size * 2;
+
+    for (char digit : numStr) {
+        // Vérifier que c'est bien un chiffre
+        if (digit < '0' || digit > '9') {
+            // Si ce n'est pas un chiffre, sauter mais ne rien dessiner
+            currentX += digitWidth + digitSpacing;
+            continue;
+        }
+
+        int d = digit - '0';
+
+        // Dessiner chaque chiffre pixel par pixel
+        for (int py = 0; py < 7; py++) {
+            for (int px = 0; px < 5; px++) {
+                bool drawPixel = false;
+
+                // Patterns pour chaque chiffre
+                switch (d) {
+                    case 0:
+                        drawPixel = (py == 0 && px > 0 && px < 4) ||
+                                   (py == 6 && px > 0 && px < 4) ||
+                                   ((px == 0 || px == 4) && py > 0 && py < 6);
+                        break;
+                    case 1:
+                        drawPixel = (px == 2) || (py == 6);
+                        break;
+                    case 2:
+                        drawPixel = (py == 0) || (py == 3) || (py == 6) ||
+                                   (px == 4 && py > 0 && py < 3) ||
+                                   (px == 0 && py > 3 && py < 6);
+                        break;
+                    case 3:
+                        drawPixel = (py == 0) || (py == 3) || (py == 6) ||
+                                   (px == 4 && py > 0 && py < 6);
+                        break;
+                    case 4:
+                        drawPixel = (px == 4) || (py == 3) ||
+                                   (px == 0 && py < 3);
+                        break;
+                    case 5:
+                        drawPixel = (py == 0) || (py == 3) || (py == 6) ||
+                                   (px == 0 && py > 0 && py < 3) ||
+                                   (px == 4 && py > 3 && py < 6);
+                        break;
+                    case 6:
+                        drawPixel = (py == 0 && px > 0) || (py == 3) || (py == 6 && px > 0 && px < 4) ||
+                                   (px == 0 && py > 0) ||
+                                   (px == 4 && py > 3 && py < 6);
+                        break;
+                    case 7:
+                        drawPixel = (py == 0) || (px == 4 && py > 0);
+                        break;
+                    case 8:
+                        drawPixel = (py == 0) || (py == 3) || (py == 6) ||
+                                   (px == 0 && py > 0 && py < 6) ||
+                                   (px == 4 && py > 0 && py < 6);
+                        break;
+                    case 9:
+                        drawPixel = (py == 0) || (py == 3) || (py == 6 && px < 4) ||
+                                   (px == 0 && py > 0 && py < 3) ||
+                                   (px == 4);
+                        break;
+                }
+
+                if (drawPixel) {
+                    for (int sy = 0; sy < size; sy++) {
+                        for (int sx = 0; sx < size; sx++) {
+                            SDL_RenderDrawPoint(renderer,
+                                              currentX + px * size + sx,
+                                              y + py * size + sy);
+                        }
+                    }
+                }
+            }
+        }
+
+        currentX += digitWidth + digitSpacing;
+    }
+}
+
+void Menu::renderHighScoresScreen(SDL_Renderer* renderer) {
+    // Titre
+    // "MEILLEURS SCORES" = 16 chars, size 3 -> largeur = 10*3*16 = 480px -> x_centre = (800-480)/2 = 160
+    SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Couleur dorée
+    drawText(renderer, "MEILLEURS SCORES", 160, 50, 3, false);
+
+    int y = 150;
+    int spacing = 100;
+
+    // Récupérer les scores
+    int scoreEasy = ScoreManager::getInstance().getHighScore(Difficulty::EASY);
+    int scoreMedium = ScoreManager::getInstance().getHighScore(Difficulty::MEDIUM);
+    int scoreHard = ScoreManager::getInstance().getHighScore(Difficulty::HARD);
+
+    // Afficher FACILE
+    // "FACILE" = 6 chars, size 2 -> largeur = 10*2*6 = 120px -> x_centre = (800-120)/2 = 340
+    SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255); // Vert clair
+    drawText(renderer, "FACILE", 340, y, 2, false);
+    y += 40;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    // Calculer la largeur du nombre pour le centrer
+    std::string easyStr = std::to_string(scoreEasy);
+    int easyWidth = easyStr.length() * (3 * 6 + 3 * 2); // size=3: digitWidth=18, digitSpacing=6
+    int easyX = (800 - easyWidth) / 2;
+    drawNumber(renderer, scoreEasy, easyX, y, 3);
+    y += spacing;
+
+    // Afficher MOYEN
+    // "MOYEN" = 5 chars, size 2 -> largeur = 10*2*5 = 100px -> x_centre = (800-100)/2 = 350
+    SDL_SetRenderDrawColor(renderer, 255, 200, 100, 255); // Orange
+    drawText(renderer, "MOYEN", 350, y, 2, false);
+    y += 40;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    // Calculer la largeur du nombre pour le centrer
+    std::string mediumStr = std::to_string(scoreMedium);
+    int mediumWidth = mediumStr.length() * (3 * 6 + 3 * 2);
+    int mediumX = (800 - mediumWidth) / 2;
+    drawNumber(renderer, scoreMedium, mediumX, y, 3);
+    y += spacing;
+
+    // Afficher DIFFICILE
+    // "DIFFICILE" = 9 chars, size 2 -> largeur = 10*2*9 = 180px -> x_centre = (800-180)/2 = 310
+    SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255); // Rouge clair
+    drawText(renderer, "DIFFICILE", 310, y, 2, false);
+    y += 40;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    // Calculer la largeur du nombre pour le centrer
+    std::string hardStr = std::to_string(scoreHard);
+    int hardWidth = hardStr.length() * (3 * 6 + 3 * 2);
+    int hardX = (800 - hardWidth) / 2;
+    drawNumber(renderer, scoreHard, hardX, y, 3);
+
+    // Instructions en bas
+    // "ECHAP OU FLECHE GAUCHE POUR RETOUR" = 35 chars, size 1 -> largeur = 10*1*35 = 350px -> x_centre = (800-350)/2 = 225
+    SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
+    drawText(renderer, "ECHAP OU FLECHE GAUCHE POUR RETOUR", 225, 550, 1, false);
+}
+
 void Menu::render(SDL_Renderer* renderer) {
     // Fond noir
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -461,33 +619,15 @@ void Menu::render(SDL_Renderer* renderer) {
         // "QUITTER" = 7 chars, size 2 -> largeur = 10*2*7 = 140px -> x_centre = (800-140)/2 = 330
         drawText(renderer, "QUITTER", 330, menuY + menuSpacing * 2, 2, selectedOption == 2);
 
-        // Afficher les meilleurs scores par difficulté (alignés à gauche)
-        int scoreEasy = ScoreManager::getInstance().getHighScore(Difficulty::EASY);
-        int scoreMedium = ScoreManager::getInstance().getHighScore(Difficulty::MEDIUM);
-        int scoreHard = ScoreManager::getInstance().getHighScore(Difficulty::HARD);
-
-        if (scoreEasy > 0 || scoreMedium > 0 || scoreHard > 0) {
-            SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Couleur dorée
-            std::string titleText = "MEILLEURS SCORES";
-            drawText(renderer, titleText, 20, 180, 2, false);
-
-            // Afficher les scores par difficulté (taille 1)
-            SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255); // Gris clair
-
-            std::string easyText = "FACILE   " + std::to_string(scoreEasy);
-            drawText(renderer, easyText, 20, 210, 1, false);
-
-            std::string mediumText = "MOYEN   " + std::to_string(scoreMedium);
-            drawText(renderer, mediumText, 20, 225, 1, false);
-
-            std::string hardText = "DIFFICILE   " + std::to_string(scoreHard);
-            drawText(renderer, hardText, 20, 240, 1, false);
-        }
-
         // Instructions en bas
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
         // "FLECHES HAUT BAS   ENTREE POUR VALIDER" = 39 chars, size 1 -> largeur = 10*1*39 = 390px -> x_centre = (800-390)/2 = 205
-        drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 205, 550, 1, false);
+        drawText(renderer, "FLECHES HAUT BAS   ENTREE POUR VALIDER", 205, 530, 1, false);
+
+        // Indication pour accéder aux meilleurs scores
+        SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255); // Couleur dorée
+        // "FLECHE DROITE POUR MEILLEURS SCORES" = 36 chars, size 1 -> largeur = 10*1*36 = 360px -> x_centre = (800-360)/2 = 220
+        drawText(renderer, "FLECHE DROITE POUR MEILLEURS SCORES", 220, 550, 1, false);
 
     } else if (state == MenuState::DIFFICULTY_SELECTION) {
         // Écran de sélection de difficulté
@@ -545,5 +685,7 @@ void Menu::render(SDL_Renderer* renderer) {
         SDL_SetRenderDrawColor(renderer, 150, 150, 150, 255);
         // "APPUYER SUR ECHAP POUR REVENIR" = 30 chars, size 1 -> largeur = 10*1*30 = 300px -> x_centre = (800-300)/2 = 250
         drawText(renderer, "APPUYER SUR ECHAP POUR REVENIR", 250, 550, 1, false);
+    } else if (state == MenuState::HIGHSCORES_SCREEN) {
+        renderHighScoresScreen(renderer);
     }
 }
